@@ -5,6 +5,15 @@ All notable changes to Veckord will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-07-28
+
+### Added
+- **Targeted Sudo Privilege Handling**: Refactored `scripts/install.py` to handle root-owned Decky Loader plugin root directories (`~/homebrew/plugins/Deckord`) using narrowly-scoped `sudo` subprocess commands (`sudo mv`, `sudo mkdir`, `sudo cp -a`).
+- **Atomic Same-Filesystem Backups**: Decky plugin backups during updates are now created directly inside `~/homebrew/plugins/.veckord-backup-<timestamp>` on the same filesystem boundary, enabling instant atomic renames without `shutil.move` cross-device permission failures.
+- **Sudo Preflight Validation**: Added `check_sudo_preflight()` to verify cached sudo authorization prior to attempting any modifications. Aborts cleanly in non-interactive environments if authorization is unavailable.
+- **Post-Install Plugin Verification**: Automatically verifies installed `plugin.json`, `package.json`, and entrypoint files after restarting `plugin_loader.service`, triggering safe rollback if verification fails.
+- **Standalone `install.py` Release Asset**: Published `install.py` directly to release assets and included its hash in `checksums.sha256`.
+
 ## [1.0.2] - 2026-07-28
 
 ### Added

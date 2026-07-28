@@ -53,7 +53,7 @@ def _make_veckord_zip(dest: Path, extra_files: Optional[Dict[str, bytes]] = None
         )
         zf.writestr(
             "package.json",
-            json.dumps({"name": "veckord", "version": "1.0.2"}).encode(),
+            json.dumps({"name": "veckord", "version": "1.0.3"}).encode(),
         )
         zf.writestr("backend/__init__.py", b"")
         zf.writestr("backend/veckord_backend.py", b"class VeckordBackend: pass\n")
@@ -252,7 +252,7 @@ class InstallerTestBase(unittest.TestCase):
             content = "[Context]\nfilesystems=" + ";".join(filesystems) + ";\n"
             override_file.write_text(content)
 
-    def _setup_downloads(self, tag: str = "v1.0.2") -> tuple:
+    def _setup_downloads(self, tag: str = "v1.0.3") -> tuple:
         """Create fake download files, return (install_hex, veckord_hex, bridge_hex, vencord_hex)."""
         dl_dir = M.MANAGED_ROOT / "downloads" / tag
         dl_dir.mkdir(parents=True, exist_ok=True)
@@ -498,9 +498,9 @@ class TestFreshInstall(InstallerTestBase):
     ):
         """A fresh install with no existing plugin should succeed."""
         self.assertFalse(M.DECKY_PLUGIN_DIR.exists())
-        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.2"
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         with patch.object(M, "download_release_assets", return_value=dl_dir):
-            result = M.cmd_install(tag="v1.0.2", interactive=False)
+            result = M.cmd_install(tag="v1.0.3", interactive=False)
         self.assertEqual(result, 0)
         # Plugin dir should now exist with expected files
         self.assertTrue((M.DECKY_PLUGIN_DIR / "main.py").exists())
@@ -518,19 +518,19 @@ class TestFreshInstall(InstallerTestBase):
     @patch.object(M, "is_vesktop_installed", return_value=False)
     def test_install_fails_without_vesktop(self, mock_vesktop, mock_bazzite):
         with self.assertRaises(M.InstallerError):
-            M.cmd_install(tag="v1.0.2", interactive=False)
+            M.cmd_install(tag="v1.0.3", interactive=False)
 
     @patch.object(M, "is_bazzite", return_value=True)
     @patch.object(M, "is_vesktop_installed", return_value=True)
     @patch.object(M, "is_decky_installed", return_value=False)
     def test_install_fails_without_decky(self, mock_decky, mock_vesktop, mock_bazzite):
         with self.assertRaises(M.InstallerError):
-            M.cmd_install(tag="v1.0.2", interactive=False)
+            M.cmd_install(tag="v1.0.3", interactive=False)
 
     @patch.object(M, "is_bazzite", return_value=False)
     def test_install_fails_on_non_bazzite(self, mock_bazzite):
         with self.assertRaises(M.InstallerError):
-            M.cmd_install(tag="v1.0.2", interactive=False)
+            M.cmd_install(tag="v1.0.3", interactive=False)
 
 
 # ===========================================================================
@@ -557,13 +557,13 @@ class TestExistingInstallUpdate(InstallerTestBase):
         self, mock_sudo, mock_running,
         mock_decky, mock_vesktop, mock_bazzite,
     ):
-        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.2"
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         with patch.object(M, "download_release_assets", return_value=dl_dir):
-            result = M.cmd_update(tag="v1.0.2", interactive=False)
+            result = M.cmd_update(tag="v1.0.3", interactive=False)
         self.assertEqual(result, 0)
         # New version should be installed
         pkg = json.loads((M.DECKY_PLUGIN_DIR / "package.json").read_text())
-        self.assertEqual(pkg["version"], "1.0.2")
+        self.assertEqual(pkg["version"], "1.0.3")
         # Backup should exist
         backups = list((M.MANAGED_ROOT / "backups").iterdir())
         self.assertTrue(len(backups) >= 1, "Backup should have been created")
@@ -576,7 +576,7 @@ class TestExistingInstallUpdate(InstallerTestBase):
         import shutil
         shutil.rmtree(M.DECKY_PLUGIN_DIR)
         with self.assertRaises(M.InstallerError):
-            M.cmd_update(tag="v1.0.2", interactive=False)
+            M.cmd_update(tag="v1.0.3", interactive=False)
 
 
 # ===========================================================================
@@ -716,7 +716,7 @@ class TestRollback(InstallerTestBase):
         self._create_vesktop_config()
         self._create_flatpak_override()
         # Create downloads with wrong checksum
-        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.2"
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         dl_dir.mkdir(parents=True, exist_ok=True)
         _make_veckord_zip(dl_dir / "veckord.zip")
         _make_vencord_bridge_zip(dl_dir / "vencordBridge.zip")
@@ -727,7 +727,7 @@ class TestRollback(InstallerTestBase):
             b"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef  vencordBridge.zip\n"
             b"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef  vencord-dist.zip\n"
         )
-        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.2"
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         with patch.object(M, "is_bazzite", return_value=True), \
              patch.object(M, "is_vesktop_installed", return_value=True), \
              patch.object(M, "is_decky_installed", return_value=True), \
@@ -735,7 +735,7 @@ class TestRollback(InstallerTestBase):
              patch.object(M, "run_sudo", return_value=None), \
              patch.object(M, "download_release_assets", return_value=dl_dir):
             with self.assertRaises(M.InstallerError):
-                M.cmd_install(tag="v1.0.2", interactive=False)
+                M.cmd_install(tag="v1.0.3", interactive=False)
         # Plugin dir must NOT exist
         self.assertFalse(M.DECKY_PLUGIN_DIR.exists())
 
@@ -762,12 +762,12 @@ class TestRepeatedInstallation(InstallerTestBase):
         self, mock_sudo, mock_running, mock_decky, mock_vesktop, mock_bazzite
     ):
         """Running install twice should never create a Veckord/ directory."""
-        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.2"
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         with patch.object(M, "download_release_assets", return_value=dl_dir):
             # First install
-            M.cmd_install(tag="v1.0.2", interactive=False)
+            M.cmd_install(tag="v1.0.3", interactive=False)
             # Second install (will route to update since plugin_dir exists)
-            M.cmd_install(tag="v1.0.2", interactive=False)
+            M.cmd_install(tag="v1.0.3", interactive=False)
         self.assertTrue(M.DECKY_PLUGIN_DIR.exists())  # Deckord/ exists
         self.assertFalse((M.DECKY_PLUGINS_ROOT / "Veckord").exists())  # Veckord/ never created
 
@@ -927,6 +927,102 @@ class TestCheckMissingComponents(InstallerTestBase):
             M.cmd_check()
         except SystemExit:
             pass
+
+
+# ===========================================================================
+# Test: privilege handling & rollback
+# ===========================================================================
+
+class TestPrivilegeHandlingAndRollback(InstallerTestBase):
+
+    def setUp(self):
+        super().setUp()
+        M.DECKY_PLUGINS_ROOT.mkdir(parents=True, exist_ok=True)
+        self._create_vesktop_config()
+        self._create_flatpak_override()
+        self._setup_downloads("v1.0.3")
+
+    @patch.object(M, "_decky_plugin_dir_needs_sudo", return_value=True)
+    @patch("subprocess.run")
+    def test_sudo_preflight_fails_noninteractive_when_sudo_unavailable(self, mock_run, mock_needs):
+        """In non-interactive mode, check_sudo_preflight fails immediately if sudo -n v fails."""
+        mock_run.return_value = MagicMock(returncode=1, stderr="sudo: a password is required")
+        with self.assertRaises(M.InstallerError) as ctx:
+            M.check_sudo_preflight(interactive=False)
+        self.assertIn("Sudo authorization is required", str(ctx.exception))
+
+    @patch.object(M, "_decky_plugin_dir_needs_sudo", return_value=True)
+    @patch.object(M, "run_sudo")
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    def test_root_owned_plugins_dir_uses_targeted_sudo(
+        self, mock_preflight, mock_running, mock_decky, mock_vesktop, mock_bazzite, mock_sudo, mock_needs
+    ):
+        """Root-owned Decky plugin updates must use targeted sudo mv, mkdir, cp commands."""
+        M.DECKY_PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+        (M.DECKY_PLUGIN_DIR / "plugin.json").write_text('{"name": "Veckord"}')
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
+
+        with patch.object(M, "download_release_assets", return_value=dl_dir), \
+             patch.object(M, "verify_installed_decky_plugin", return_value=None):
+            M.cmd_update(tag="v1.0.3", interactive=False)
+
+        sudo_cmds = [call.args for call in mock_sudo.call_args_list]
+        cmd_names = [cmd[0] for cmd in sudo_cmds]
+        self.assertIn("mv", cmd_names)
+        self.assertIn("mkdir", cmd_names)
+        self.assertIn("cp", cmd_names)
+        self.assertIn("systemctl", cmd_names)
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    def test_favorites_untouched_on_update(
+        self, mock_preflight, mock_running, mock_decky, mock_vesktop, mock_bazzite
+    ):
+        """Favorites stored in ~/.config/veckord/ must not be modified or deleted during update."""
+        fav_dir = M.HOME / ".config" / "veckord"
+        fav_dir.mkdir(parents=True, exist_ok=True)
+        fav_file = fav_dir / "favorites.json"
+        fav_file.write_text('{"channels": ["123456789"]}')
+
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
+        with patch.object(M, "download_release_assets", return_value=dl_dir), \
+             patch.object(M, "run_sudo", return_value=None):
+            M.cmd_install(tag="v1.0.3", interactive=False)
+
+        self.assertTrue(fav_file.exists())
+        self.assertEqual(fav_file.read_text(), '{"channels": ["123456789"]}')
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    def test_no_sudo_used_for_vesktop_config(
+        self, mock_preflight, mock_running, mock_decky, mock_vesktop, mock_bazzite
+    ):
+        """Vesktop state.json, settings.json, and Flatpak override edits must remain unprivileged."""
+        sudo_calls = []
+
+        def spy_sudo(*args):
+            sudo_calls.append(args)
+
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
+        with patch.object(M, "download_release_assets", return_value=dl_dir), \
+             patch.object(M, "run_sudo", side_effect=spy_sudo):
+            M.cmd_install(tag="v1.0.3", interactive=False)
+
+        for call_args in sudo_calls:
+            cmd_str = " ".join(call_args)
+            self.assertNotIn("state.json", cmd_str)
+            self.assertNotIn("settings.json", cmd_str)
+            self.assertNotIn("flatpak", cmd_str)
 
 
 # ===========================================================================

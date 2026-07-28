@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
 
-VECOKD_VERSION = "1.0.2"
+VECOKD_VERSION = "1.0.3"
 
 # Pinned Vencord release tag / commit
 PINNED_VENCORD_TAG = "v1.15.0"

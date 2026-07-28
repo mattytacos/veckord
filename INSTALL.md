@@ -1,4 +1,4 @@
-# Veckord Installation Guide v1.0.2
+# Veckord Installation Guide v1.0.3
 
 **Veckord** is a controller-native Decky Loader plugin that controls Discord voice channels from the Steam Gaming Mode quick-access panel. It works exclusively with **Vesktop** (Flatpak `dev.vencord.Vesktop`) and **Decky Loader** on **Bazzite**.
 
@@ -17,44 +17,51 @@
 
 ---
 
-## Release Assets (v1.0.2)
+## Release Assets (v1.0.3)
 
 Each GitHub release at `https://github.com/mattytacos/veckord/releases` contains:
 
 | Asset | Contents |
 |---|---|
+| `install.py` | Standalone Python 3 installer script |
 | `veckord.zip` | Compiled Decky plugin (`dist/`, `backend/`, `main.py`, manifests) |
 | `vencordBridge.zip` | Vencord bridge plugin source files (`index.tsx`, `native.ts`, etc.) |
 | `vencord-dist.zip` | Precompiled Vencord distribution with `VeckordBridge` compiled in (`patcher.js`, `renderer.js`, `build-metadata.json`, etc.) |
-| `checksums.sha256` | SHA-256 digests of all release zip files |
+| `checksums.sha256` | SHA-256 digests of all release assets |
 
 ---
 
-## Quick Start
+## Quick Start (No Repository Clone Required)
 
-### 1. Check current state
+### 1. Download Installer Script
 
 ```bash
-python3 ~/Documents/deckord/scripts/install.py check
+wget https://github.com/mattytacos/veckord/releases/download/v1.0.3/install.py
 ```
 
-### 2. Fresh install
+### 2. Check System Status (Read-Only)
 
 ```bash
-# Close Vesktop first, then:
-python3 ~/Documents/deckord/scripts/install.py --tag v1.0.2 install
+python3 install.py --tag v1.0.3 check
 ```
 
-### 3. Update to a new release
+### 3. Fresh Installation or Upgrade
 
 ```bash
-python3 ~/Documents/deckord/scripts/install.py --tag v1.0.2 update
+# Close Vesktop first, then run:
+python3 install.py --tag v1.0.3 install
 ```
 
-### 4. Repair broken configuration
+### 4. Update an Existing Installation
 
 ```bash
-python3 ~/Documents/deckord/scripts/install.py repair
+python3 install.py --tag v1.0.3 update
+```
+
+### 5. Repair Configuration
+
+```bash
+python3 install.py repair
 ```
 
 ---

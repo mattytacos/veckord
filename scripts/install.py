@@ -45,7 +45,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 # Version
 # ---------------------------------------------------------------------------
-INSTALLER_VERSION = "1.0.2"
+INSTALLER_VERSION = "1.0.3"
 
 # ---------------------------------------------------------------------------
 # Dynamic base paths — NEVER hardcoded
@@ -633,15 +633,39 @@ def atomic_replace_dir(
 
 
 # ---------------------------------------------------------------------------
-# sudo helper
+# sudo helper & preflight
 # ---------------------------------------------------------------------------
 
+def check_sudo_preflight(interactive: bool) -> None:
+    """Verify that sudo authentication is available before starting any modifications."""
+    if not _decky_plugin_dir_needs_sudo():
+        return
+
+    _info("Checking sudo authorization for Decky Loader plugin directory operations...")
+    cmd = ["sudo", "-n", "v"] if not interactive else ["sudo", "-v"]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            if not interactive:
+                raise InstallerError(
+                    "Sudo authorization is required to modify the Decky Loader plugins directory,\n"
+                    "but cached sudo credentials are not available in non-interactive mode.\n"
+                    "Please run interactively or refresh sudo timestamp first with 'sudo -v'."
+                )
+            else:
+                raise InstallerError("Sudo authentication failed or was cancelled.")
+    except FileNotFoundError:
+        raise InstallerError("sudo command is not available on this system.")
+
+
 def run_sudo(*args: str) -> None:
-    """Run a command with sudo. Raises InstallerError on failure."""
+    """Run a targeted command with sudo (never shell=True). Raises InstallerError on failure."""
     cmd = ["sudo"] + list(args)
-    result = subprocess.run(cmd, timeout=60)
+    _info(f"Executing privileged action: {' '.join(cmd)}")
+    result = subprocess.run(cmd, timeout=60, capture_output=True, text=True)
     if result.returncode != 0:
-        raise InstallerError(f"sudo command failed: {' '.join(cmd)}")
+        err = result.stderr.strip() if result.stderr else f"exit code {result.returncode}"
+        raise InstallerError(f"Privileged action failed ({' '.join(cmd)}): {err}")
 
 
 # ---------------------------------------------------------------------------
@@ -750,66 +774,115 @@ def _extract_veckord_plugin(zip_path: Path, dest: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def _decky_plugin_dir_needs_sudo() -> bool:
-    """Return True if we need sudo to create the Decky plugin dir."""
-    # If the plugins root is not writable by current user, we need sudo
+    """Return True if we need sudo to create or modify the Decky plugin dir."""
     return not os.access(DECKY_PLUGINS_ROOT, os.W_OK)
 
 
-def install_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> None:
+def validate_staged_plugin(staging_dir: Path) -> None:
+    """Validate extracted plugin contents prior to installation."""
+    pkg_json = staging_dir / "package.json"
+    plugin_json = staging_dir / "plugin.json"
+    main_py = staging_dir / "main.py"
+
+    if not plugin_json.exists():
+        raise InstallerError("Invalid Decky plugin archive: missing plugin.json")
+    if not main_py.exists():
+        raise InstallerError("Invalid Decky plugin archive: missing main.py")
+
+    try:
+        meta = json.loads(plugin_json.read_text(encoding="utf-8"))
+        if meta.get("name") != PLUGIN_DISPLAY_NAME:
+            raise InstallerError(f"Invalid plugin.json: expected name '{PLUGIN_DISPLAY_NAME}', got '{meta.get('name')}'")
+    except (json.JSONDecodeError, OSError) as e:
+        raise InstallerError(f"Failed to parse plugin.json in staged package: {e}")
+
+
+def _rollback_decky_plugin(backup_path: Optional[Path], needs_sudo: bool) -> None:
+    """Roll back Decky plugin directory state upon failure."""
+    print("  Rolling back Decky plugin installation...")
+    try:
+        if DECKY_PLUGIN_DIR.exists():
+            if needs_sudo:
+                run_sudo("rm", "-rf", str(DECKY_PLUGIN_DIR))
+            else:
+                shutil.rmtree(DECKY_PLUGIN_DIR, ignore_errors=True)
+
+        if backup_path and backup_path.exists():
+            if needs_sudo:
+                run_sudo("mv", str(backup_path), str(DECKY_PLUGIN_DIR))
+            else:
+                backup_path.rename(DECKY_PLUGIN_DIR)
+            print(f"  Restored plugin from backup: {backup_path}")
+    except Exception as e:
+        print(f"  CRITICAL ROLLBACK FAILURE: {e}")
+        if backup_path:
+            print("  MANUAL RECOVERY INSTRUCTIONS:")
+            print(f"    sudo rm -rf {DECKY_PLUGIN_DIR}")
+            print(f"    sudo mv {backup_path} {DECKY_PLUGIN_DIR}")
+            print(f"    sudo systemctl restart {DECKY_SERVICE}")
+
+
+def install_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> Optional[Path]:
     """
-    Install the Decky plugin from veckord_zip into DECKY_PLUGIN_DIR.
-    Never creates a Veckord/ directory.
+    Install/update the Decky plugin from veckord_zip into DECKY_PLUGIN_DIR.
+    Uses targeted sudo commands for root-owned directory operations.
+    Returns backup_path if a backup was created.
     """
     if is_symlink_target(DECKY_PLUGIN_DIR):
         raise InstallerError(
             f"{DECKY_PLUGIN_DIR} is a symlink. Remove it manually before installing."
         )
 
-    # Extract to a temp directory first
-    tmp_dir = Path(tempfile.mkdtemp(prefix="veckord_plugin_"))
+    # 1. Extract and validate in user-owned temporary staging dir
+    staging_dir = Path(tempfile.mkdtemp(prefix="veckord_staging_"))
     try:
-        _extract_veckord_plugin(veckord_zip, tmp_dir)
+        _extract_veckord_plugin(veckord_zip, staging_dir)
+        validate_staged_plugin(staging_dir)
 
-        # Backup existing if present
-        backup_path = None
+        backup_path: Optional[Path] = None
+        needs_sudo = _decky_plugin_dir_needs_sudo()
+
+        # 2. Atomic backup on the SAME filesystem inside DECKY_PLUGINS_ROOT
         if DECKY_PLUGIN_DIR.exists():
-            backup_path = MANAGED_ROOT / "backups" / time.strftime("%Y%m%d_%H%M%S")
-            shutil.move(str(DECKY_PLUGIN_DIR), str(backup_path))
-            rollback.register(lambda bp=backup_path: shutil.move(str(bp), str(DECKY_PLUGIN_DIR)))
-            _info(f"Backed up existing plugin to {backup_path}")
+            backup_name = f".veckord-backup-{time.strftime('%Y%m%d_%H%M%S')}"
+            backup_path = DECKY_PLUGINS_ROOT / backup_name
 
-        # Create the plugin directory (needs sudo if plugins root is root-owned)
-        if _decky_plugin_dir_needs_sudo():
-            # Use sudo to create the directory
-            run_sudo("mkdir", "-p", str(DECKY_PLUGIN_DIR))
-        else:
-            DECKY_PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
-
-        # Copy files (the extracted temp dir has the plugin files at root)
-        for item in tmp_dir.iterdir():
-            target = DECKY_PLUGIN_DIR / item.name
-            if item.is_dir():
-                shutil.copytree(str(item), str(target))
+            if needs_sudo:
+                run_sudo("mv", str(DECKY_PLUGIN_DIR), str(backup_path))
             else:
-                shutil.copy2(str(item), str(target))
+                DECKY_PLUGIN_DIR.rename(backup_path)
 
-        rollback.register(lambda: _remove_decky_plugin_dir(backup_path))
+            _info(f"Created atomic backup at {backup_path}")
+
+        # 3. Create fresh plugin directory & copy staged files
+        try:
+            if needs_sudo:
+                run_sudo("mkdir", "-p", str(DECKY_PLUGIN_DIR))
+                run_sudo("cp", "-a", f"{str(staging_dir)}/.", str(DECKY_PLUGIN_DIR))
+            else:
+                DECKY_PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+                for item in staging_dir.iterdir():
+                    dst = DECKY_PLUGIN_DIR / item.name
+                    if item.is_dir():
+                        shutil.copytree(str(item), str(dst))
+                    else:
+                        shutil.copy2(str(item), str(dst))
+        except Exception as e:
+            # Failed during creation/copy -> restore backup immediately
+            _rollback_decky_plugin(backup_path, needs_sudo)
+            raise InstallerError(f"Failed to write plugin files into {DECKY_PLUGIN_DIR}: {e}")
+
+        # 4. Register rollback function in case subsequent install steps fail
+        rollback.register(lambda bp=backup_path, ns=needs_sudo: _rollback_decky_plugin(bp, ns))
         _status("PASS", "Decky plugin installed", str(DECKY_PLUGIN_DIR))
+        return backup_path
     finally:
-        shutil.rmtree(tmp_dir, ignore_errors=True)
+        shutil.rmtree(staging_dir, ignore_errors=True)
 
 
-def _remove_decky_plugin_dir(backup_path: Optional[Path]) -> None:
-    """Remove DECKY_PLUGIN_DIR and restore backup if available."""
-    if DECKY_PLUGIN_DIR.exists():
-        shutil.rmtree(DECKY_PLUGIN_DIR, ignore_errors=True)
-    if backup_path and backup_path.exists():
-        shutil.move(str(backup_path), str(DECKY_PLUGIN_DIR))
-
-
-def update_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> None:
+def update_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> Optional[Path]:
     """Update the Decky plugin files (preserving favorites which live outside the plugin dir)."""
-    install_decky_plugin(veckord_zip, rollback)
+    return install_decky_plugin(veckord_zip, rollback)
 
 
 def verify_vencord_dist_metadata(dist_dir: Path) -> Optional[Dict[str, Any]]:
@@ -1135,6 +1208,33 @@ def cmd_check() -> int:
         return 0
 
 
+def verify_installed_decky_plugin(expected_version: Optional[str] = None) -> None:
+    """Verify that installed Decky plugin files and manifests exist and parse cleanly."""
+    plugin_json = DECKY_PLUGIN_DIR / "plugin.json"
+    pkg_json = DECKY_PLUGIN_DIR / "package.json"
+    main_py = DECKY_PLUGIN_DIR / "main.py"
+
+    if not plugin_json.exists() or not main_py.exists():
+        raise InstallerError("Post-installation verification failed: plugin.json or main.py missing in installed directory.")
+
+    try:
+        meta = json.loads(plugin_json.read_text(encoding="utf-8"))
+        if meta.get("name") != PLUGIN_DISPLAY_NAME:
+            raise InstallerError(f"Post-installation verification failed: name mismatch ({meta.get('name')})")
+    except Exception as e:
+        raise InstallerError(f"Post-installation verification failed parsing plugin.json: {e}")
+
+    if expected_version and pkg_json.exists():
+        try:
+            pkg = json.loads(pkg_json.read_text(encoding="utf-8"))
+            installed_v = pkg.get("version", "")
+            target_v = expected_version.lstrip("v")
+            if installed_v and target_v and installed_v != target_v:
+                raise InstallerError(f"Post-installation verification failed: version mismatch (expected {target_v}, got {installed_v})")
+        except (json.JSONDecodeError, OSError):
+            pass
+
+
 # ---------------------------------------------------------------------------
 # cmd_install
 # ---------------------------------------------------------------------------
@@ -1149,6 +1249,7 @@ def cmd_install(tag: Optional[str] = None, interactive: bool = True) -> int:
     _assert_bazzite()
     _assert_vesktop()
     _assert_decky()
+    check_sudo_preflight(interactive)
 
     if DECKY_PLUGIN_DIR.exists():
         _status("WARNING", f"Plugin directory already exists: {DECKY_PLUGIN_DIR}")
@@ -1210,6 +1311,9 @@ def cmd_install(tag: Optional[str] = None, interactive: bool = True) -> int:
         run_sudo("systemctl", "restart", DECKY_SERVICE)
         _status("PASS", "Decky Loader service restarted")
 
+        # Verify installed plugin
+        verify_installed_decky_plugin(resolved_tag)
+
     except Exception:
         rollback.rollback()
         raise
@@ -1243,6 +1347,7 @@ def cmd_update(tag: Optional[str] = None, interactive: bool = True) -> int:
     _assert_bazzite()
     _assert_vesktop()
     _assert_decky()
+    check_sudo_preflight(interactive)
 
     if not DECKY_PLUGIN_DIR.exists():
         raise InstallerError(
@@ -1300,6 +1405,9 @@ def cmd_update(tag: Optional[str] = None, interactive: bool = True) -> int:
         _section("Restarting Decky Loader")
         run_sudo("systemctl", "restart", DECKY_SERVICE)
         _status("PASS", "Decky Loader service restarted")
+
+        # Verify installed plugin
+        verify_installed_decky_plugin(resolved_tag)
 
     except Exception:
         rollback.rollback()
