@@ -164,7 +164,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
                 globalName: user.globalName || user.global_name || null,
             };
         } catch (e) {
-            console.error("[DeckordAdapter] getCurrentUser error:", e);
+            console.error("[VeckordAdapter] getCurrentUser error:", e);
             return null;
         }
     }
@@ -193,7 +193,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
             }
             return results;
         } catch (e) {
-            console.error("[DeckordAdapter] getGuilds error:", e);
+            console.error("[VeckordAdapter] getGuilds error:", e);
             return [];
         }
     }
@@ -263,7 +263,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
             }
             return results;
         } catch (e) {
-            console.error(`[DeckordAdapter] getVoiceChannels error for guild ${guildId}:`, e);
+            console.error(`[VeckordAdapter] getVoiceChannels error for guild ${guildId}:`, e);
             return [];
         }
     }
@@ -310,7 +310,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
                 memberCount: 1,
             };
         } catch (e) {
-            console.error("[DeckordAdapter] getCurrentVoiceChannel error:", e);
+            console.error("[VeckordAdapter] getCurrentVoiceChannel error:", e);
             return null;
         }
     }
@@ -358,7 +358,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
                 isSelfDeaf: selfDeaf,
             };
         } catch (e) {
-            console.error("[DeckordAdapter] getVoiceSettings error:", e);
+            console.error("[VeckordAdapter] getVoiceSettings error:", e);
             return { isMuted: false, isDeafened: false, isSelfMute: false, isSelfDeaf: false };
         }
     }
@@ -366,10 +366,10 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
     async setMuted(muted: boolean): Promise<void> {
         const store = this.mediaEngineStore;
         const before = store && typeof store.isSelfMute === "function" ? Boolean(store.isSelfMute()) : false;
-        console.log(`[DeckordAdapter] setMuted(${muted}) invoked. Before state: ${before}`);
+        console.log(`[VeckordAdapter] setMuted(${muted}) invoked. Before state: ${before}`);
 
         if (before === muted) {
-            console.log(`[DeckordAdapter] setMuted: state is already ${muted}`);
+            console.log(`[VeckordAdapter] setMuted: state is already ${muted}`);
             return;
         }
 
@@ -378,15 +378,15 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
 
         let invoked = false;
         if (actions && typeof actions.toggleSelfMute === "function") {
-            console.log("[DeckordAdapter] Invoking actions.toggleSelfMute()");
+            console.log("[VeckordAdapter] Invoking actions.toggleSelfMute()");
             actions.toggleSelfMute();
             invoked = true;
         } else if (actions && typeof actions.setSelfMute === "function") {
-            console.log(`[DeckordAdapter] Invoking actions.setSelfMute(${muted})`);
+            console.log(`[VeckordAdapter] Invoking actions.setSelfMute(${muted})`);
             actions.setSelfMute(muted);
             invoked = true;
         } else if (dispatcher && typeof dispatcher.dispatch === "function") {
-            console.log("[DeckordAdapter] Invoking FluxDispatcher.dispatch({ type: 'AUDIO_TOGGLE_SELF_MUTE' })");
+            console.log("[VeckordAdapter] Invoking FluxDispatcher.dispatch({ type: 'AUDIO_TOGGLE_SELF_MUTE' })");
             dispatcher.dispatch({ type: "AUDIO_TOGGLE_SELF_MUTE" });
             invoked = true;
         }
@@ -400,7 +400,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
             await new Promise((r) => setTimeout(r, 100));
             const current = store && typeof store.isSelfMute === "function" ? Boolean(store.isSelfMute()) : false;
             if (current === muted) {
-                console.log(`[DeckordAdapter] setMuted SUCCESS confirmed state: ${current}`);
+                console.log(`[VeckordAdapter] setMuted SUCCESS confirmed state: ${current}`);
                 return;
             }
         }
@@ -414,10 +414,10 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
     async setDeafened(deafened: boolean): Promise<void> {
         const store = this.mediaEngineStore;
         const before = store && typeof store.isSelfDeaf === "function" ? Boolean(store.isSelfDeaf()) : false;
-        console.log(`[DeckordAdapter] setDeafened(${deafened}) invoked. Before state: ${before}`);
+        console.log(`[VeckordAdapter] setDeafened(${deafened}) invoked. Before state: ${before}`);
 
         if (before === deafened) {
-            console.log(`[DeckordAdapter] setDeafened: state is already ${deafened}`);
+            console.log(`[VeckordAdapter] setDeafened: state is already ${deafened}`);
             return;
         }
 
@@ -426,15 +426,15 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
 
         let invoked = false;
         if (actions && typeof actions.toggleSelfDeaf === "function") {
-            console.log("[DeckordAdapter] Invoking actions.toggleSelfDeaf()");
+            console.log("[VeckordAdapter] Invoking actions.toggleSelfDeaf()");
             actions.toggleSelfDeaf();
             invoked = true;
         } else if (actions && typeof actions.setSelfDeafen === "function") {
-            console.log(`[DeckordAdapter] Invoking actions.setSelfDeafen(${deafened})`);
+            console.log(`[VeckordAdapter] Invoking actions.setSelfDeafen(${deafened})`);
             actions.setSelfDeafen(deafened);
             invoked = true;
         } else if (dispatcher && typeof dispatcher.dispatch === "function") {
-            console.log("[DeckordAdapter] Invoking FluxDispatcher.dispatch({ type: 'AUDIO_TOGGLE_SELF_DEAF' })");
+            console.log("[VeckordAdapter] Invoking FluxDispatcher.dispatch({ type: 'AUDIO_TOGGLE_SELF_DEAF' })");
             dispatcher.dispatch({ type: "AUDIO_TOGGLE_SELF_DEAF" });
             invoked = true;
         }
@@ -447,7 +447,7 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
             await new Promise((r) => setTimeout(r, 100));
             const current = store && typeof store.isSelfDeaf === "function" ? Boolean(store.isSelfDeaf()) : false;
             if (current === deafened) {
-                console.log(`[DeckordAdapter] setDeafened SUCCESS confirmed state: ${current}`);
+                console.log(`[VeckordAdapter] setDeafened SUCCESS confirmed state: ${current}`);
                 return;
             }
         }

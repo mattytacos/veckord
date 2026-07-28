@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Only the latest release of Deckord receives security updates.
+Only the latest release of Veckord receives security updates.
 
 | Version | Supported |
 | :--- | :--- |
@@ -11,7 +11,7 @@ Only the latest release of Deckord receives security updates.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Deckord, please follow responsible disclosure guidelines:
+If you discover a security vulnerability in Veckord, please follow responsible disclosure guidelines:
 
 1. **Do NOT open a public issue.**
 2. Send a private report detailing the issue and steps to reproduce via GitHub Private Vulnerability Reporting or directly to the repository maintainer.
@@ -19,6 +19,6 @@ If you discover a security vulnerability in Deckord, please follow responsible d
 
 ## Security Guarantees
 
-- **No Remote Tokens**: Deckord never sends your Discord token to third-party servers.
+- **No Remote Tokens**: Veckord never sends your Discord token to third-party servers.
 - **Local IPC Scope**: All IPC occurs over local Unix domain stream sockets (`AF_UNIX`) bound to the current user's runtime directory (`/run/user/<uid>`).
 - **Log Sanitization**: Logs automatically redact passwords, tokens, and authorization parameters.

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Create a report to help us fix a bug in Deckord
+description: Create a report to help us fix a bug in Veckord
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -10,7 +10,7 @@ body:
     id: environment
     attributes:
       label: Operating System / Hardware
-      description: What system are you running Deckord on?
+      description: What system are you running Veckord on?
       placeholder: e.g. Steam Deck LCD / Bazzite 40 / Fedora Gaming
     validations:
       required: true

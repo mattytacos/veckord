@@ -59,7 +59,7 @@ Two live, connectable Unix domain sockets were discovered:
 
 ### Socket File Permissions
 
-- **Path**: `/run/user/<uid>/deckord/bridge.sock`
+- **Path**: `/run/user/<uid>/veckord/bridge.sock`
 - **Owner**: `<username>`
 - **Group**: `<username>`
 - **Permissions**: `0755` (`srwxr-xr-x`)

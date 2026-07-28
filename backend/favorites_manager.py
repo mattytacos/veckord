@@ -1,5 +1,5 @@
 """
-Deckord Favorites Manager.
+Veckord Favorites Manager.
 
 Manages persistence of favorite voice channels in a local JSON settings file.
 Schema stored:
@@ -24,7 +24,12 @@ def resolve_settings_path() -> str:
         base_dir = decky_settings
     else:
         home = os.environ.get("HOME") or os.path.expanduser("~")
-        base_dir = os.path.join(home, ".config", "deckord")
+        primary_dir = os.path.join(home, ".config", "veckord")
+        legacy_dir = os.path.join(home, ".config", "deckord")
+        if not os.path.exists(primary_dir) and os.path.exists(legacy_dir):
+            base_dir = legacy_dir
+        else:
+            base_dir = primary_dir
 
     if not os.path.exists(base_dir):
         try:
@@ -73,7 +78,7 @@ class FavoritesManager:
 
             return valid_favorites
         except Exception as e:
-            print(f"[DeckordFavorites] Read error: {e}")
+            print(f"[VeckordFavorites] Read error: {e}")
             return []
 
     def set_favorites(self, favorites: List[Dict[str, Any]]) -> bool:
@@ -106,7 +111,7 @@ class FavoritesManager:
                 json.dump(sanitized, f, indent=2)
             return True
         except Exception as e:
-            print(f"[DeckordFavorites] Write error: {e}")
+            print(f"[VeckordFavorites] Write error: {e}")
             return False
 
     def add_favorite(self, guild_id: str, channel_id: str, guild_name: str, channel_name: str) -> bool:

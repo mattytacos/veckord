@@ -1,4 +1,4 @@
-# Deckord 🎮🎧
+# Veckord 🎮🎧
 
 > Controller-native Decky Loader plugin for controlling Discord voice channels in Gaming Mode via a local Vesktop/Vencord bridge.
 
@@ -6,7 +6,7 @@
 [![Decky Loader](https://img.shields.io/badge/Decky--Loader-Plugin-blue.svg)](https://github.com/SteamDeckHomebrew/decky-loader)
 [![Vesktop](https://img.shields.io/badge/Client-Vesktop%2FVencord-7289da.svg)](https://github.com/Vencord/Vesktop)
 
-**Deckord** allows Steam Deck and Handheld PC gamers running Steam Gaming Mode (Bazzite, SteamOS) to seamlessly view, join, mute, deafen, and manage Discord voice channels directly from the Decky QAM (Quick Access Menu) overlay—without switching out of game or using a mouse/touchpad.
+**Veckord** allows Steam Deck and Handheld PC gamers running Steam Gaming Mode (Bazzite, SteamOS) to seamlessly view, join, mute, deafen, and manage Discord voice channels directly from the Decky QAM (Quick Access Menu) overlay—without switching out of game or using a mouse/touchpad.
 
 ---
 
@@ -18,7 +18,7 @@
   - One-tap controller actions: **Mute / Unmute**, **Deafen / Undeafen**, and **Disconnect**.
 - ⭐️ **Favorites System**: Save your most used voice channels, reorder them, and join instantly from the Decky overlay.
 - 📋 **Guild & Channel Browser**: Grouped channel browser displaying all joinable voice channels across your Discord servers.
-- ⚡️ **Zero Audio Overhead**: Deckord controls voice state via client RPC—it does **not** transport audio or run a separate voice stack.
+- ⚡️ **Zero Audio Overhead**: Veckord controls voice state via client RPC—it does **not** transport audio or run a separate voice stack.
 - 🔒 **Privacy First**: Runs entirely over local Unix domain sockets (`AF_UNIX`). No external servers, no token tracking, no cloud telemetry.
 
 ---
@@ -32,7 +32,7 @@ graph TD
     end
     
     subgraph "Local IPC Bridge"
-        PY <-->|AF_UNIX Socket / JSON-RPC| BRIDGE["DeckordBridge (Vencord Plugin)"]
+        PY <-->|AF_UNIX Socket / JSON-RPC| BRIDGE["VeckordBridge (Vencord Plugin)"]
     end
     
     subgraph "Vesktop / Discord Client"
@@ -54,13 +54,13 @@ graph TD
 
 ### Step 1: Install Vencord Bridge Plugin
 1. Copy the `vencordBridge` directory into your Vencord userplugins directory:
-   - **Vesktop Flatpak**: `~/.var/app/dev.vencord.Vesktop/config/vesktop/vencord/src/userplugins/deckordBridge`
-2. Enable `DeckordBridge` in Vencord Plugin Settings inside Vesktop.
+   - **Vesktop Flatpak**: `~/.var/app/dev.vencord.Vesktop/config/vesktop/vencord/src/userplugins/veckordBridge`
+2. Enable `VeckordBridge` in Vencord Plugin Settings inside Vesktop.
 3. Restart Vesktop.
 
 ### Step 2: Install Decky Plugin
-1. Download the latest `deckord.zip` release from [Releases](https://github.com/mattytacos/deckord/releases).
-2. Extract or install via Decky Loader plugin developer menu into `~/homebrew/plugins/Deckord`.
+1. Download the latest `veckord.zip` release from [Releases](https://github.com/mattytacos/veckord/releases).
+2. Extract or install via Decky Loader plugin developer menu into `~/homebrew/plugins/Veckord`.
 3. Restart Decky Loader service (`sudo systemctl restart plugin_loader`).
 
 ---
@@ -74,8 +74,8 @@ graph TD
 ### Build Decky Frontend & Backend
 ```bash
 # Clone repository
-git clone https://github.com/mattytacos/deckord.git
-cd deckord
+git clone https://github.com/mattytacos/veckord.git
+cd veckord
 
 # Install dependencies
 pnpm install
@@ -85,10 +85,10 @@ pnpm build
 ```
 
 ### Build Vencord Bridge Plugin
-To build the Vencord bridge plugin, place `vencordBridge/` into a clone of [Vencord](https://github.com/Vendicated/Vencord) under `src/userplugins/deckordBridge/` and build Vencord:
+To build the Vencord bridge plugin, place `vencordBridge/` into a clone of [Vencord](https://github.com/Vendicated/Vencord) under `src/userplugins/veckordBridge/` and build Vencord:
 ```bash
 git clone https://github.com/Vendicated/Vencord.git
-cp -r /path/to/deckord/vencordBridge Vencord/src/userplugins/deckordBridge
+cp -r /path/to/veckord/vencordBridge Vencord/src/userplugins/veckordBridge
 cd Vencord
 pnpm install
 pnpm build
@@ -105,22 +105,22 @@ python3 -m unittest discover tests
 
 | Issue | Cause | Solution |
 | :--- | :--- | :--- |
-| **"Bridge unavailable"** | Vesktop is not running or `DeckordBridge` is disabled. | Launch Vesktop and verify `DeckordBridge` is enabled in Vencord plugins. |
+| **"Bridge unavailable"** | Vesktop is not running or `VeckordBridge` is disabled. | Launch Vesktop and verify `VeckordBridge` is enabled in Vencord plugins. |
 | **"Not connected to voice"** | User has not joined a voice channel. | Select a voice channel from Favorites or the Channel Browser and press Join. |
-| **Flatpak Socket Access** | Flatpak sandbox restricting socket access. | Verify `/run/user/<uid>/deckord/bridge.sock` permission mode is `0755`. |
+| **Flatpak Socket Access** | Flatpak sandbox restricting socket access. | Verify `/run/user/<uid>/veckord/bridge.sock` permission mode is `0755`. |
 
 ---
 
 ## 🔒 Privacy & Security
 
-- **Local IPC Only**: All communications remain on local Unix domain stream sockets (`/run/user/<uid>/deckord/bridge.sock`).
-- **No Token Storage**: Deckord does not read, request, or store your Discord account token or password.
+- **Local IPC Only**: All communications remain on local Unix domain stream sockets (`/run/user/<uid>/veckord/bridge.sock`).
+- **No Token Storage**: Veckord does not read, request, or store your Discord account token or password.
 - **Log Sanitization**: Logs automatically redact all personal IDs and credentials.
 
 ---
 
 ## 📜 Disclaimer & License
 
-> **Important**: Deckord is an independent open-source project created by **mattytacos** and is **not** affiliated with, endorsed by, or sponsored by Discord Inc., Vencord, Vesktop, Valve Corporation, or Decky Loader.
+> **Important**: Veckord is an independent open-source project created by **mattytacos** and is **not** affiliated with, endorsed by, or sponsored by Discord Inc., Vencord, Vesktop, Valve Corporation, or Decky Loader.
 
 Distributed under the [MIT License](LICENSE).

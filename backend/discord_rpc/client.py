@@ -47,7 +47,7 @@ class DiscordRPCClient:
         socket_path: Optional[str] = None,
         timeout: float = 5.0,
     ):
-        self.client_id = client_id or os.environ.get("DECKORD_DISCORD_CLIENT_ID")
+        self.client_id = client_id or os.environ.get("VECKORD_DISCORD_CLIENT_ID")
         self.specified_socket_path = socket_path
         self.selected_socket_path: Optional[str] = None
         self.timeout = timeout
@@ -69,7 +69,7 @@ class DiscordRPCClient:
         Execute socket connection and RPC HANDSHAKE sequence until READY event is received.
         """
         if not self.client_id:
-            raise MissingClientIdError("No Discord Application Client ID configured (DECKORD_DISCORD_CLIENT_ID).")
+            raise MissingClientIdError("No Discord Application Client ID configured (VECKORD_DISCORD_CLIENT_ID).")
 
         try:
             # 1. Discover socket

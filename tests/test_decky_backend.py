@@ -1,5 +1,5 @@
 """
-Unit tests for Deckord Decky Plugin Backend, Favorites Persistence, and Error Scenarios.
+Unit tests for Veckord Decky Plugin Backend, Favorites Persistence, and Error Scenarios.
 """
 
 import os
@@ -14,7 +14,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from favorites_manager import FavoritesManager
-from deckord_backend import DeckordBackend
+from veckord_backend import VeckordBackend
 
 
 class TestDeckyBackend(unittest.TestCase):
@@ -23,7 +23,7 @@ class TestDeckyBackend(unittest.TestCase):
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.fav_file = os.path.join(self.tmp_dir.name, "favorites.json")
         self.favorites_mgr = FavoritesManager(file_path=self.fav_file)
-        self.backend = DeckordBackend(socket_path="/tmp/nonexistent_deckord_bridge.sock", timeout=1.0)
+        self.backend = VeckordBackend(socket_path="/tmp/nonexistent_veckord_bridge.sock", timeout=1.0)
         self.backend.favorites_mgr = self.favorites_mgr
 
     def tearDown(self):
@@ -81,7 +81,7 @@ class TestDeckyBackend(unittest.TestCase):
         self.assertFalse(res["ok"])
         self.assertEqual(res["error"]["code"], "BRIDGE_UNAVAILABLE")
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_successful_status_read(self, mock_bridge):
         mock_bridge.return_value = {
             "ok": True,
@@ -107,7 +107,7 @@ class TestDeckyBackend(unittest.TestCase):
         self.assertEqual(res["data"]["client"], "Vesktop/Vencord")
         self.assertTrue(res["data"]["connected"])
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_current_channel_normalization(self, mock_bridge):
         mock_bridge.return_value = {
             "ok": True,
@@ -126,7 +126,7 @@ class TestDeckyBackend(unittest.TestCase):
         self.assertTrue(res["ok"])
         self.assertEqual(res["data"]["channel"]["name"], "Lounge")
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_join_channel(self, mock_bridge):
         mock_bridge.return_value = {"ok": True, "data": {"success": True}}
         res = self.backend.join_voice_channel("200", "100")
@@ -137,25 +137,25 @@ class TestDeckyBackend(unittest.TestCase):
         self.assertFalse(res["ok"])
         self.assertEqual(res["error"]["code"], "INVALID_FAVORITE")
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_leave_channel(self, mock_bridge):
         mock_bridge.return_value = {"ok": True, "data": {"success": True}}
         res = self.backend.leave_voice_channel()
         self.assertTrue(res["ok"])
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_set_muted(self, mock_bridge):
         mock_bridge.return_value = {"ok": True, "data": {"success": True}}
         res = self.backend.set_muted(True)
         self.assertTrue(res["ok"])
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_set_deafened(self, mock_bridge):
         mock_bridge.return_value = {"ok": True, "data": {"success": True}}
         res = self.backend.set_deafened(True)
         self.assertTrue(res["ok"])
 
-    @patch.object(DeckordBackend, "_execute_bridge_call")
+    @patch.object(VeckordBackend, "_execute_bridge_call")
     def test_get_guilds_and_channels(self, mock_bridge):
         def side_effect(method, params=None):
             if method == "getGuilds":

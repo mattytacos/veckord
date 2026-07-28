@@ -1,11 +1,11 @@
 name: Feature Request
-description: Suggest an idea or enhancement for Deckord
+description: Suggest an idea or enhancement for Veckord
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
-      value: Thank you for suggesting a feature for Deckord!
+      value: Thank you for suggesting a feature for Veckord!
   - type: textarea
     id: problem
     attributes:

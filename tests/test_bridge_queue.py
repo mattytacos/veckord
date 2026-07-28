@@ -1,5 +1,5 @@
 """
-Unit tests for Deckord Vencord Bridge Renderer-Pull Request Queue Logic & Protocol Errors.
+Unit tests for Veckord Vencord Bridge Renderer-Pull Request Queue Logic & Protocol Errors.
 """
 
 import os
@@ -14,7 +14,7 @@ bridge_client_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."
 if bridge_client_dir not in sys.path:
     sys.path.insert(0, bridge_client_dir)
 
-from client import DeckordBridgeClient
+from client import VeckordBridgeClient
 
 
 class TestBridgeQueueLogic(unittest.TestCase):
@@ -62,7 +62,7 @@ class TestBridgeQueueLogic(unittest.TestCase):
                                 "ok": False,
                                 "error": {
                                     "code": "RENDERER_UNAVAILABLE",
-                                    "message": "The Deckord renderer bridge is unavailable."
+                                    "message": "The Veckord renderer bridge is unavailable."
                                 }
                             }
                             conn.sendall((json.dumps(resp) + "\n").encode("utf-8"))
@@ -70,7 +70,7 @@ class TestBridgeQueueLogic(unittest.TestCase):
                             # Simulate renderer pulling and responding
                             proof_res = {
                                 "rendererHandledRequest": True,
-                                "buildMarker": "deckord-renderer-pull-v1",
+                                "buildMarker": "veckord-renderer-pull-v1",
                                 "documentReadyState": "complete",
                                 "documentTitlePresent": True,
                                 "locationProtocol": "https:",
@@ -89,12 +89,12 @@ class TestBridgeQueueLogic(unittest.TestCase):
         t = threading.Thread(target=mock_server.handle_client, args=(server_sock,))
         t.start()
 
-        client = DeckordBridgeClient()
+        client = VeckordBridgeClient()
         client._socket = client_sock
         res = client.send_request("getRendererProof")
 
         self.assertTrue(res.get("rendererHandledRequest"))
-        self.assertEqual(res.get("buildMarker"), "deckord-renderer-pull-v1")
+        self.assertEqual(res.get("buildMarker"), "veckord-renderer-pull-v1")
         t.join(timeout=2.0)
         client_sock.close()
         server_sock.close()
@@ -111,7 +111,7 @@ class TestBridgeQueueLogic(unittest.TestCase):
                 "ok": False,
                 "error": {
                     "code": "RENDERER_UNAVAILABLE",
-                    "message": "The Deckord renderer bridge is unavailable."
+                    "message": "The Veckord renderer bridge is unavailable."
                 }
             }
             server_sock.sendall((json.dumps(resp) + "\n").encode("utf-8"))
@@ -119,7 +119,7 @@ class TestBridgeQueueLogic(unittest.TestCase):
         t = threading.Thread(target=server_loop)
         t.start()
 
-        client = DeckordBridgeClient()
+        client = VeckordBridgeClient()
         client._socket = client_sock
 
         with self.assertRaises(RuntimeError) as ctx:

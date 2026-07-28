@@ -1,6 +1,6 @@
-# Contributing to Deckord 🤝
+# Contributing to Veckord 🤝
 
-Thank you for your interest in contributing to Deckord! We welcome bug reports, documentation improvements, feature suggestions, and pull requests.
+Thank you for your interest in contributing to Veckord! We welcome bug reports, documentation improvements, feature suggestions, and pull requests.
 
 ---
 
@@ -14,8 +14,8 @@ Thank you for your interest in contributing to Deckord! We welcome bug reports, 
 ### Setup Workspace
 ```bash
 # Clone repository
-git clone https://github.com/mattytacos/deckord.git
-cd deckord
+git clone https://github.com/mattytacos/veckord.git
+cd veckord
 
 # Install frontend dependencies
 pnpm install

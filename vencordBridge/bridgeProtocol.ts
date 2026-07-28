@@ -1,5 +1,5 @@
 /**
- * Deckord Local Bridge Protocol Definitions & Validators.
+ * Veckord Local Bridge Protocol Definitions & Validators.
  * 
  * Shared framing, validation, and error code definitions for the local Unix socket bridge.
  */

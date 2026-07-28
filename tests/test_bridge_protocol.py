@@ -1,5 +1,5 @@
 """
-Unit tests for Deckord Local Bridge Protocol & Python Bridge Client.
+Unit tests for Veckord Local Bridge Protocol & Python Bridge Client.
 """
 
 import os
@@ -14,7 +14,7 @@ bridge_client_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."
 if bridge_client_dir not in sys.path:
     sys.path.insert(0, bridge_client_dir)
 
-from client import DeckordBridgeClient, resolve_socket_path
+from client import VeckordBridgeClient, resolve_socket_path
 
 
 class TestBridgeProtocol(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestBridgeProtocol(unittest.TestCase):
     def test_resolve_socket_path(self):
         with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/1000"}):
             path = resolve_socket_path()
-            self.assertEqual(path, "/run/user/1000/deckord/bridge.sock")
+            self.assertEqual(path, "/run/user/1000/veckord/bridge.sock")
 
     def test_fragmented_newline_input_handling(self):
         client_sock, server_sock = socket.socketpair()
@@ -62,7 +62,7 @@ class TestBridgeProtocol(unittest.TestCase):
         t = threading.Thread(target=server_loop)
         t.start()
 
-        client = DeckordBridgeClient()
+        client = VeckordBridgeClient()
         client._socket = client_sock
         res = client.send_request("ping")
         self.assertTrue(res.get("pong"))
@@ -98,7 +98,7 @@ class TestBridgeProtocol(unittest.TestCase):
         t = threading.Thread(target=server_loop)
         t.start()
 
-        client = DeckordBridgeClient()
+        client = VeckordBridgeClient()
         client._socket = client_sock
         
         # Send two requests sequentially
@@ -132,7 +132,7 @@ class TestBridgeProtocol(unittest.TestCase):
         t = threading.Thread(target=server_loop)
         t.start()
 
-        client = DeckordBridgeClient()
+        client = VeckordBridgeClient()
         client._socket = client_sock
 
         with self.assertRaises(RuntimeError) as ctx:

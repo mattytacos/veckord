@@ -1,4 +1,4 @@
-# Deckord Vencord Voice Controller Feasibility Probe
+# Veckord Vencord Voice Controller Feasibility Probe
 
 This directory contains a standalone Vencord custom plugin experiment for validating Discord voice channel membership, state detection, and control through Vesktop/Vencord Webpack stores.
 
@@ -26,5 +26,5 @@ This directory contains a standalone Vencord custom plugin experiment for valida
 
 1. Copy `experiments/vencord-voice-probe/` into your Vencord user plugins directory (`~/.config/vesktop/plugins/` or `src/userplugins/`).
 2. Build Vencord or enable user plugins in Vesktop Settings.
-3. Enable `DeckordVoiceProbe` in Vencord Plugins settings.
+3. Enable `VeckordVoiceProbe` in Vencord Plugins settings.
 4. Open the plugin settings panel to view live user state, server list, voice channels, and diagnostic action buttons.

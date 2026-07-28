@@ -30,7 +30,7 @@ class AuthError(ConnectionError):
 
 
 class MissingClientSecretError(AuthError):
-    """Raised when OAuth token exchange is attempted without DECKORD_DISCORD_CLIENT_SECRET."""
+    """Raised when OAuth token exchange is attempted without VECKORD_DISCORD_CLIENT_SECRET."""
     pass
 
 
@@ -98,18 +98,18 @@ class AuthManager:
         Credentials are sent form-encoded ONLY in the HTTP request body.
         The returned rpc_token remains in memory only and is sanitized in logs.
         """
-        cid = client_id or self.client.client_id or os.environ.get("DECKORD_DISCORD_CLIENT_ID")
-        secret = client_secret or os.environ.get("DECKORD_DISCORD_CLIENT_SECRET")
+        cid = client_id or self.client.client_id or os.environ.get("VECKORD_DISCORD_CLIENT_ID")
+        secret = client_secret or os.environ.get("VECKORD_DISCORD_CLIENT_SECRET")
 
         if not cid:
             raise AuthError("No Discord Client ID configured.")
         if not secret:
-            raise MissingClientSecretError("RPC token request requires DECKORD_DISCORD_CLIENT_SECRET environment variable.")
+            raise MissingClientSecretError("RPC token request requires VECKORD_DISCORD_CLIENT_SECRET environment variable.")
 
         url = "https://discord.com/api/v10/oauth2/token/rpc"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "DeckordRPC/1.0",
+            "User-Agent": "VeckordRPC/1.0",
         }
         data_params = {
             "client_id": str(cid),
@@ -208,16 +208,16 @@ class AuthManager:
         """
         Exchange an authorization code for an OAuth access token over HTTP.
         """
-        cid = client_id or self.client.client_id or os.environ.get("DECKORD_DISCORD_CLIENT_ID")
-        secret = client_secret or os.environ.get("DECKORD_DISCORD_CLIENT_SECRET")
+        cid = client_id or self.client.client_id or os.environ.get("VECKORD_DISCORD_CLIENT_ID")
+        secret = client_secret or os.environ.get("VECKORD_DISCORD_CLIENT_SECRET")
         
         if not secret:
-            raise MissingClientSecretError("OAuth token exchange requires DECKORD_DISCORD_CLIENT_SECRET environment variable.")
+            raise MissingClientSecretError("OAuth token exchange requires VECKORD_DISCORD_CLIENT_SECRET environment variable.")
 
         url = "https://discord.com/api/v10/oauth2/token"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "DeckordRPC/1.0",
+            "User-Agent": "VeckordRPC/1.0",
         }
         data_params = {
             "grant_type": "authorization_code",

@@ -1,4 +1,4 @@
-# Deckord Known Risks & Mitigation Matrix
+# Veckord Known Risks & Mitigation Matrix
 
 ## 1. Architecture & Maintenance Risks
 
@@ -6,7 +6,7 @@
 | :--- | :--- | :--- | :--- |
 | **Discord Internal Webpack Changes** | Discord updates may rename internal Webpack store properties or action method signatures. | Medium | Isolate all Webpack module lookups inside a single adapter file (`discordAdapter.ts`). Provide defensive fallback lookups and structured error reporting when a store method is unresolved. |
 | **Vencord Plugin Updates** | Changes to Vencord's plugin API (`definePlugin`) or build environment. | Low | Rely only on standard Vencord `definePlugin` and `Webpack` finder methods (`getByProps`, `getByStoreName`, `common`). |
-| **Local Bridge Socket Security** | Untrusted local processes could attempt to connect to the Vencord bridge socket. | Medium | Restrict parent directory permissions to `0700` (`rwx------`) and socket file to `0600` (`rw-------`) under `$XDG_RUNTIME_DIR/deckord/`. Perform strict input validation, method allowlist, and 64 KB request size ceiling. |
+| **Local Bridge Socket Security** | Untrusted local processes could attempt to connect to the Vencord bridge socket. | Medium | Restrict parent directory permissions to `0700` (`rwx------`) and socket file to `0600` (`rw-------`) under `$XDG_RUNTIME_DIR/veckord/`. Perform strict input validation, method allowlist, and 64 KB request size ceiling. |
 | **Vesktop Process Lifecycle** | Vesktop client closed or restarted while Decky plugin is active. | Low | Decky Python backend auto-reconnects with backoff when local Unix socket connection drops. Stale socket cleanup on server startup/shutdown prevents orphan sockets. |
 
 ---

@@ -1,7 +1,7 @@
 """
-Deckord Decky Plugin Backend Wrapper.
+Veckord Decky Plugin Backend Wrapper.
 
-Wraps DeckordBridgeClient and FavoritesManager to expose normalized API methods to Decky ServerAPI.
+Wraps VeckordBridgeClient and FavoritesManager to expose normalized API methods to Decky ServerAPI.
 """
 
 import os
@@ -14,15 +14,15 @@ if bridge_client_path not in sys.path:
     sys.path.insert(0, bridge_client_path)
 
 try:
-    from client import DeckordBridgeClient, resolve_socket_path
+    from client import VeckordBridgeClient, resolve_socket_path
 except ImportError:
     def resolve_socket_path() -> str:
         xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
         uid = str(os.getuid()) if hasattr(os, "getuid") else "1000"
         base_dir = xdg_runtime or f"/run/user/{uid}"
-        return os.path.join(base_dir, "deckord", "bridge.sock")
+        return os.path.join(base_dir, "veckord", "bridge.sock")
 
-    class DeckordBridgeClient:
+    class VeckordBridgeClient:
         def __init__(self, socket_path: Optional[str] = None, timeout: float = 15.0):
             self.socket_path = socket_path or resolve_socket_path()
             self.timeout = timeout
@@ -36,9 +36,9 @@ except ImportError:
     from favorites_manager import FavoritesManager
 
 
-class DeckordBackend:
+class VeckordBackend:
     """
-    Deckord Decky backend service.
+    Veckord Decky backend service.
     """
 
     def __init__(self, socket_path: Optional[str] = None, timeout: float = 15.0):
@@ -48,7 +48,7 @@ class DeckordBackend:
 
     def _execute_bridge_call(self, method: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         try:
-            client = DeckordBridgeClient(socket_path=self.socket_path, timeout=self.timeout)
+            client = VeckordBridgeClient(socket_path=self.socket_path, timeout=self.timeout)
             res = client.send_request(method, params or {})
             return {
                 "ok": True,

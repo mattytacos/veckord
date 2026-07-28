@@ -189,7 +189,7 @@ const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-function DeckordContent() {
+function VeckordContent() {
     // ── State ─────────────────────────────────────────────────────────────────
 
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.BRIDGE_UNAVAILABLE);
@@ -365,7 +365,7 @@ function DeckordContent() {
         try {
             const res = await call<[string, string], ApiResponse<any>>("join_voice_channel", fav.channel_id, fav.guild_id);
             if (res?.ok) {
-                toaster.toast({ title: "Deckord Voice", body: `Joined ${fav.channel_name}` });
+                toaster.toast({ title: "Veckord Voice", body: `Joined ${fav.channel_name}` });
 
                 // Discord's voice state update is async — poll with backoff
                 // until currentVoiceChannel becomes non-null (up to ~3 seconds).
@@ -380,7 +380,7 @@ function DeckordContent() {
             } else {
                 const msg = res?.error?.message ?? "Failed to join channel";
                 setErrorMessage(msg);
-                toaster.toast({ title: "Deckord Error", body: msg });
+                toaster.toast({ title: "Veckord Error", body: msg });
             }
         } catch (e: any) {
             setErrorMessage(e?.message ?? String(e));
@@ -397,7 +397,7 @@ function DeckordContent() {
         try {
             const res = await call<[], ApiResponse<any>>("leave_voice_channel");
             if (res?.ok) {
-                toaster.toast({ title: "Deckord Voice", body: "Disconnected from voice" });
+                toaster.toast({ title: "Veckord Voice", body: "Disconnected from voice" });
                 // Leave is also async in Discord — poll briefly for null channel
                 for (let attempt = 0; attempt < 6; attempt++) {
                     await sleep(300);
@@ -420,13 +420,13 @@ function DeckordContent() {
         setIsActionPending(true);
         const before = voiceSettings.isSelfMute;
         const next = !before;
-        console.log(`[DeckordUI] Mute toggle invoked. Before state: ${before}, Requested target: ${next}`);
+        console.log(`[VeckordUI] Mute toggle invoked. Before state: ${before}, Requested target: ${next}`);
         setStatusMessage(next ? "Muting…" : "Unmuting…");
         try {
             const res = await call<[boolean], ApiResponse<any>>("set_muted", next);
-            console.log("[DeckordUI] set_muted RPC result:", JSON.stringify(res));
+            console.log("[VeckordUI] set_muted RPC result:", JSON.stringify(res));
             if (res?.ok) {
-                toaster.toast({ title: "Deckord Voice", body: next ? "Muted" : "Unmuted" });
+                toaster.toast({ title: "Veckord Voice", body: next ? "Muted" : "Unmuted" });
                 await sleep(200);
                 await fetchState();
             } else {
@@ -445,13 +445,13 @@ function DeckordContent() {
         setIsActionPending(true);
         const before = voiceSettings.isSelfDeaf;
         const next = !before;
-        console.log(`[DeckordUI] Deafen toggle invoked. Before state: ${before}, Requested target: ${next}`);
+        console.log(`[VeckordUI] Deafen toggle invoked. Before state: ${before}, Requested target: ${next}`);
         setStatusMessage(next ? "Deafening…" : "Undeafening…");
         try {
             const res = await call<[boolean], ApiResponse<any>>("set_deafened", next);
-            console.log("[DeckordUI] set_deafened RPC result:", JSON.stringify(res));
+            console.log("[VeckordUI] set_deafened RPC result:", JSON.stringify(res));
             if (res?.ok) {
-                toaster.toast({ title: "Deckord Voice", body: next ? "Deafened" : "Undeafened" });
+                toaster.toast({ title: "Veckord Voice", body: next ? "Deafened" : "Undeafened" });
                 await sleep(200);
                 await fetchState();
             } else {
@@ -533,7 +533,7 @@ function DeckordContent() {
             <PanelSection title="Add Favorite — Servers">
                 <PanelSectionRow>
                     <ButtonItem layout="below" onClick={() => setBrowserView("none")}>
-                        ← Back to Deckord
+                        ← Back to Veckord
                     </ButtonItem>
                 </PanelSectionRow>
 
@@ -625,7 +625,7 @@ function DeckordContent() {
     // ── Main view ──────────────────────────────────────────────────────────────
 
     return (
-        <PanelSection title="Deckord">
+        <PanelSection title="Veckord">
 
             {/* Status row */}
             <PanelSectionRow>
@@ -811,8 +811,8 @@ function DeckordContent() {
 // ─── Plugin export ─────────────────────────────────────────────────────────────
 
 export default definePlugin(() => ({
-    title: <div className={staticClasses.Title}>Deckord</div>,
+    title: <div className={staticClasses.Title}>Veckord</div>,
     icon: <FaDiscord />,
-    content: <DeckordContent />,
+    content: <VeckordContent />,
     onDismount() {},
 }));

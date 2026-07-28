@@ -1,7 +1,7 @@
 /**
- * Deckord Voice Bridge Vencord Plugin.
+ * Veckord Voice Bridge Vencord Plugin.
  * 
- * Real Vencord plugin providing local Unix socket bridge for Deckord controller.
+ * Real Vencord plugin providing local Unix socket bridge for Veckord controller.
  * Implements a renderer-pull worker loop that long-polls native.ts for pending work.
  */
 
@@ -17,15 +17,15 @@ import {
 import { VencordDiscordVoiceAdapter } from "./discordAdapter";
 import { UserSummary, GuildSummary, VoiceChannelSummary, VoiceSettings } from "./types";
 
-const Native = VencordNative.pluginHelpers.DeckordBridge as PluginNative<typeof import("./native")>;
+const Native = VencordNative.pluginHelpers.VeckordBridge as PluginNative<typeof import("./native")>;
 const adapter = new VencordDiscordVoiceAdapter();
 
 let isWorkerRunning: boolean = false;
 let rendererInstanceId: string = "";
 
 export default definePlugin({
-    name: "DeckordBridge",
-    description: "DeckordBridge build deckord-renderer-pull-v1",
+    name: "VeckordBridge",
+    description: "VeckordBridge build veckord-renderer-pull-v1",
     authors: [
         {
             name: "Antigravity Team",
@@ -37,39 +37,39 @@ export default definePlugin({
         rendererInstanceId = `renderer-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
         isWorkerRunning = true;
 
-        console.log("[DeckordBridge] renderer plugin started");
-        console.log(`[DeckordBridge] renderer instance ID: ${rendererInstanceId}`);
-        console.log(`[DeckordBridge] renderer plugin start time: ${new Date().toISOString()}`);
-        console.log(`[DeckordBridge] userStore resolved: ${!!UserStore}`);
-        console.log(`[DeckordBridge] guildStore resolved: ${!!GuildStore}`);
-        console.log(`[DeckordBridge] channelStore resolved: ${!!ChannelStore}`);
-        console.log(`[DeckordBridge] voiceStateStore resolved: ${!!VoiceStateStore}`);
-        console.log(`[DeckordBridge] mediaEngineStore resolved: ${!!MediaEngineStore}`);
+        console.log("[VeckordBridge] renderer plugin started");
+        console.log(`[VeckordBridge] renderer instance ID: ${rendererInstanceId}`);
+        console.log(`[VeckordBridge] renderer plugin start time: ${new Date().toISOString()}`);
+        console.log(`[VeckordBridge] userStore resolved: ${!!UserStore}`);
+        console.log(`[VeckordBridge] guildStore resolved: ${!!GuildStore}`);
+        console.log(`[VeckordBridge] channelStore resolved: ${!!ChannelStore}`);
+        console.log(`[VeckordBridge] voiceStateStore resolved: ${!!VoiceStateStore}`);
+        console.log(`[VeckordBridge] mediaEngineStore resolved: ${!!MediaEngineStore}`);
         
         try {
             const res = await Native.startBridge();
-            console.log("[DeckordBridge] startBridge result:", JSON.stringify(res));
+            console.log("[VeckordBridge] startBridge result:", JSON.stringify(res));
 
             // Start single asynchronous renderer pull worker loop
             this.runRendererWorker(rendererInstanceId);
 
         } catch (e) {
-            console.error("[DeckordBridge] Failed to invoke Native.startBridge:", e);
+            console.error("[VeckordBridge] Failed to invoke Native.startBridge:", e);
         }
     },
 
     async stop() {
-        console.log("[DeckordBridge] renderer plugin stopped");
+        console.log("[VeckordBridge] renderer plugin stopped");
         isWorkerRunning = false;
         try {
             await Native.stopBridge();
         } catch (e) {
-            console.error("[DeckordBridge] Failed to invoke Native.stopBridge:", e);
+            console.error("[VeckordBridge] Failed to invoke Native.stopBridge:", e);
         }
     },
 
     async runRendererWorker(instanceId: string) {
-        console.log(`[DeckordBridge] Renderer pull worker loop started for ${instanceId}`);
+        console.log(`[VeckordBridge] Renderer pull worker loop started for ${instanceId}`);
 
         while (isWorkerRunning && rendererInstanceId === instanceId) {
             try {
@@ -80,7 +80,7 @@ export default definePlugin({
                 const { id, method, params } = req;
                 const shortId = id.substring(0, 8);
 
-                console.log(`[DeckordBridge][renderer] request pulled: ${method} (${shortId})`);
+                console.log(`[VeckordBridge][renderer] request pulled: ${method} (${shortId})`);
 
                 let result: any = null;
                 let ok = true;
@@ -90,7 +90,7 @@ export default definePlugin({
                     if (method === "getRendererProof" || method === "renderer-proof") {
                         result = {
                             rendererHandledRequest: true,
-                            buildMarker: "deckord-renderer-pull-v1",
+                            buildMarker: "veckord-renderer-pull-v1",
                             documentReadyState: typeof document !== "undefined" ? document.readyState : "complete",
                             documentTitlePresent: typeof document !== "undefined" && !!document.title,
                             locationProtocol: typeof location !== "undefined" ? location.protocol : "https:",
@@ -162,28 +162,28 @@ export default definePlugin({
                     };
                 }
 
-                console.log(`[DeckordBridge][renderer] response submitted: ${method} (${shortId})`);
+                console.log(`[VeckordBridge][renderer] response submitted: ${method} (${shortId})`);
                 await Native.submitResponse(instanceId, responsePayload);
 
             } catch (e) {
-                console.error("[DeckordBridge] Renderer pull worker loop error:", e);
+                console.error("[VeckordBridge] Renderer pull worker loop error:", e);
                 // Pause briefly before retrying loop on error
                 await new Promise((r) => setTimeout(r, 1000));
             }
         }
 
-        console.log(`[DeckordBridge] Renderer pull worker loop finished for ${instanceId}`);
+        console.log(`[VeckordBridge] Renderer pull worker loop finished for ${instanceId}`);
     },
 
     getSettingsPanel({ settings }: { settings: any }) {
-        return <DeckordDiagnosticPanel />;
+        return <VeckordDiagnosticPanel />;
     },
 });
 
 /**
  * Diagnostic panel for Vencord Settings UI.
  */
-function DeckordDiagnosticPanel() {
+function VeckordDiagnosticPanel() {
     const [user, setUser] = React.useState<UserSummary | null>(null);
     const [guilds, setGuilds] = React.useState<GuildSummary[]>([]);
     const [selectedGuildId, setSelectedGuildId] = React.useState<string>("");
@@ -292,7 +292,7 @@ function DeckordDiagnosticPanel() {
     return (
         <div style={{ padding: "16px", color: "#f2f3f5", fontFamily: "sans-serif" }}>
             <h2 style={{ borderBottom: "1px solid #4f545c", paddingBottom: "8px" }}>
-                Deckord Voice Bridge Status (Renderer Pull)
+                Veckord Voice Bridge Status (Renderer Pull)
             </h2>
 
             {/* Current User */}

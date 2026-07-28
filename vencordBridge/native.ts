@@ -1,5 +1,5 @@
 /**
- * Deckord Vencord Native Bridge Server.
+ * Veckord Vencord Native Bridge Server.
  * 
  * Runs in Vesktop's Node.js main process context.
  * Creates an authenticated Unix domain socket and manages a renderer-pull
@@ -69,7 +69,7 @@ const longPollWaiters: Array<{
     timer: any;
 }> = [];
 
-export class DeckordNativeBridgeServer {
+export class VeckordNativeBridgeServer {
     private server: net.Server | null = null;
     private activeSockets: Set<net.Socket> = new Set();
     public socketPath: string = "";
@@ -80,7 +80,7 @@ export class DeckordNativeBridgeServer {
 
     public resolveSocketPath(): string {
         const xdgRuntime = process.env["XDG_RUNTIME_DIR"] || `/run/user/${typeof process.getuid === "function" ? process.getuid() : 1000}`;
-        return path.join(xdgRuntime, "deckord", "bridge.sock");
+        return path.join(xdgRuntime, "veckord", "bridge.sock");
     }
 
     public async start(): Promise<string> {
@@ -109,7 +109,7 @@ export class DeckordNativeBridgeServer {
             this.server = net.createServer((socket) => this.handleConnection(socket));
 
             this.server.on("error", (err) => {
-                console.error("[DeckordNative] Socket server error:", err);
+                console.error("[VeckordNative] Socket server error:", err);
                 reject(err);
             });
 
@@ -117,8 +117,8 @@ export class DeckordNativeBridgeServer {
                 try {
                     fs.chmodSync(this.socketPath, 0o600);
                 } catch (e) {}
-                console.log("[DeckordBridge] native server listening");
-                console.log(`[DeckordNative] Server listening on ${this.socketPath} (mode 0600)`);
+                console.log("[VeckordBridge] native server listening");
+                console.log(`[VeckordNative] Server listening on ${this.socketPath} (mode 0600)`);
                 resolve(this.socketPath);
             });
         });
@@ -204,7 +204,7 @@ export class DeckordNativeBridgeServer {
         }
 
         if (isPluginStopping) {
-            const errResp = buildErrorResponse(req.id, BridgeErrorCode.PLUGIN_STOPPING, "The Deckord bridge plugin is stopping");
+            const errResp = buildErrorResponse(req.id, BridgeErrorCode.PLUGIN_STOPPING, "The Veckord bridge plugin is stopping");
             if (socket.writable) socket.write(JSON.stringify(errResp) + "\n");
             return;
         }
@@ -212,7 +212,7 @@ export class DeckordNativeBridgeServer {
         const now = Date.now();
         const isRendererAlive = activeRendererInstanceId && (now - lastRendererHeartbeat < RENDERER_HEARTBEAT_EXPIRY_MS);
         if (!isRendererAlive) {
-            const errResp = buildErrorResponse(req.id, BridgeErrorCode.RENDERER_UNAVAILABLE, "The Deckord renderer bridge is unavailable.");
+            const errResp = buildErrorResponse(req.id, BridgeErrorCode.RENDERER_UNAVAILABLE, "The Veckord renderer bridge is unavailable.");
             if (socket.writable) socket.write(JSON.stringify(errResp) + "\n");
             return;
         }
@@ -230,7 +230,7 @@ export class DeckordNativeBridgeServer {
         }
 
         activeRequestIds.add(req.id);
-        console.log(`[DeckordBridge][native] host request queued: ${req.method} (${shortId})`);
+        console.log(`[VeckordBridge][native] host request queued: ${req.method} (${shortId})`);
 
         const responsePromise = new Promise<BridgeResponse>((resolve) => {
             const timer = setTimeout(() => {
@@ -297,7 +297,7 @@ export class DeckordNativeBridgeServer {
         });
 
         const shortId = queued.request.id.substring(0, 8);
-        console.log(`[DeckordBridge][native] request dispatched to renderer: ${queued.request.method} (${shortId})`);
+        console.log(`[VeckordBridge][native] request dispatched to renderer: ${queued.request.method} (${shortId})`);
 
         waiter.resolve({
             id: queued.request.id,
@@ -352,27 +352,27 @@ export class DeckordNativeBridgeServer {
     }
 }
 
-let globalServer: DeckordNativeBridgeServer | null = null;
+let globalServer: VeckordNativeBridgeServer | null = null;
 
-// Native API Exports for VencordNative.pluginHelpers.DeckordBridge
+// Native API Exports for VencordNative.pluginHelpers.VeckordBridge
 // Note: Electron's ipcMain.handle passes event as the first parameter to every exported native function.
 export async function startBridge(_?: any): Promise<BridgeStartResult> {
     const xdgRuntime = process.env["XDG_RUNTIME_DIR"] || `/run/user/${typeof process.getuid === "function" ? process.getuid() : 1000}`;
-    const targetDir = path.join(xdgRuntime, "deckord");
+    const targetDir = path.join(xdgRuntime, "veckord");
     const socketPath = path.join(targetDir, "bridge.sock");
 
-    console.log("[DeckordBridge] native start invoked");
-    console.log(`[DeckordBridge] resolved runtime path: ${socketPath}`);
+    console.log("[VeckordBridge] native start invoked");
+    console.log(`[VeckordBridge] resolved runtime path: ${socketPath}`);
 
     try {
         if (!fs.existsSync(targetDir)) {
             fs.mkdirSync(targetDir, { mode: 0o700, recursive: true });
-            console.log(`[DeckordBridge] directory creation result: created ${targetDir} (mode 0700)`);
+            console.log(`[VeckordBridge] directory creation result: created ${targetDir} (mode 0700)`);
         } else {
             try {
                 fs.chmodSync(targetDir, 0o700);
             } catch (e) {}
-            console.log(`[DeckordBridge] directory creation result: confirmed ${targetDir} (mode 0700)`);
+            console.log(`[VeckordBridge] directory creation result: confirmed ${targetDir} (mode 0700)`);
         }
 
         if (fs.existsSync(socketPath)) {
@@ -383,11 +383,11 @@ export async function startBridge(_?: any): Promise<BridgeStartResult> {
         }
 
         if (!globalServer) {
-            globalServer = new DeckordNativeBridgeServer(socketPath);
+            globalServer = new VeckordNativeBridgeServer(socketPath);
             await globalServer.start();
         }
 
-        console.log(`[DeckordBridge] socket bind result: listening on ${socketPath} (mode 0600)`);
+        console.log(`[VeckordBridge] socket bind result: listening on ${socketPath} (mode 0600)`);
         return {
             ok: true,
             socketPath: socketPath,
@@ -395,7 +395,7 @@ export async function startBridge(_?: any): Promise<BridgeStartResult> {
         };
 
     } catch (e: any) {
-        console.error(`[DeckordBridge] socket bind error: ${e.code || 'BIND_ERROR'} - ${e.message}`);
+        console.error(`[VeckordBridge] socket bind error: ${e.code || 'BIND_ERROR'} - ${e.message}`);
         return {
             ok: false,
             socketPath: socketPath,
@@ -410,7 +410,7 @@ export async function stopBridge(_?: any): Promise<void> {
     if (globalServer) {
         await globalServer.stop();
         globalServer = null;
-        console.log("[DeckordBridge] native stopped");
+        console.log("[VeckordBridge] native stopped");
     }
 }
 
@@ -452,7 +452,7 @@ export async function waitForRequest(
         });
 
         const shortId = queued.request.id.substring(0, 8);
-        console.log(`[DeckordBridge][native] request dispatched to renderer: ${queued.request.method} (${shortId})`);
+        console.log(`[VeckordBridge][native] request dispatched to renderer: ${queued.request.method} (${shortId})`);
 
         return {
             id: queued.request.id,
@@ -487,22 +487,22 @@ export async function submitResponse(
     response: BridgeResponse
 ): Promise<void> {
     if (!response || typeof response.id !== "string") {
-        console.warn("[DeckordBridge][native] submitResponse received invalid response object");
+        console.warn("[VeckordBridge][native] submitResponse received invalid response object");
         return;
     }
 
     lastRendererHeartbeat = Date.now();
     const shortId = response.id.substring(0, 8);
-    console.log(`[DeckordBridge][native] submitResponse received: (${shortId}) from instance ${rendererInstanceId}`);
+    console.log(`[VeckordBridge][native] submitResponse received: (${shortId}) from instance ${rendererInstanceId}`);
 
     if (activeRendererInstanceId && activeRendererInstanceId !== rendererInstanceId) {
-        console.warn(`[DeckordBridge][native] Rejected response for ${shortId} from stale instance ${rendererInstanceId} (active: ${activeRendererInstanceId})`);
+        console.warn(`[VeckordBridge][native] Rejected response for ${shortId} from stale instance ${rendererInstanceId} (active: ${activeRendererInstanceId})`);
         return;
     }
 
     const entry = inFlightRequests.get(response.id);
     if (!entry) {
-        console.warn(`[DeckordBridge][native] Rejected response for unknown or timed out ID: ${shortId}`);
+        console.warn(`[VeckordBridge][native] Rejected response for unknown or timed out ID: ${shortId}`);
         return;
     }
 
@@ -510,6 +510,6 @@ export async function submitResponse(
     activeRequestIds.delete(response.id);
     if (entry.timer) clearTimeout(entry.timer);
 
-    console.log(`[DeckordBridge][native] response matched: (${shortId})`);
+    console.log(`[VeckordBridge][native] response matched: (${shortId})`);
     entry.resolve(response);
 }
