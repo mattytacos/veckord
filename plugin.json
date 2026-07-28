@@ -1,0 +1,12 @@
+{
+  "name": "Deckord",
+  "version": "1.0.0",
+  "author": "mattytacos",
+  "api_version": 1,
+  "flags": [],
+  "publish": {
+    "tags": ["audio", "voice", "discord"],
+    "description": "Discord Decky Voice Controller for Vesktop",
+    "image": ""
+  }
+}

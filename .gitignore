@@ -1,0 +1,46 @@
+# Deckord Git Ignore
+
+# Node / Frontend Build Outputs & Dependencies
+node_modules/
+dist/
+build/
+out/
+.pnpm-store/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Python Caches & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/
+.coverage
+
+# Internal Development & Experiments
+experiments/
+AGENTS.md
+
+# Runtime Data & Secrets
+favorites.json
+*.env
+.env
+*.secret
+*.token
+secrets/
+
+# OS / IDE / Editors
+.DS_Store
+.vscode/
+.idea/
+.gemini/
+*.swp
+*.swo
+
+# Release Package Archives
+*.zip
+*.tar.gz
