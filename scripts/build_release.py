@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
 
-VECOKD_VERSION = "1.0.3"
+VECOKD_VERSION = "1.1.0"
 
 # Pinned Vencord release tag / commit
 PINNED_VENCORD_TAG = "v1.15.0"
@@ -271,6 +271,9 @@ def build_vencord_dist(output_zip: Path, epoch: int) -> Dict[str, Any]:
 
     # Include Veckord LICENSE in dist
     shutil.copy2(ROOT_DIR / "LICENSE", dist_dir / "VECKORD_LICENSE")
+
+    # Ensure minimal package.json is included in dist
+    (dist_dir / "package.json").write_text("{}\n", encoding="utf-8")
 
     # Generate build metadata
     metadata = {

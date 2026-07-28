@@ -5,6 +5,16 @@ All notable changes to Veckord will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-07-28
+
+### Added
+- **Recent Voice Channels**: Promotes joined voice channels to the top of the channel area directly beneath the active voice card with most-recently-used (MRU) ordering. Persisted across restarts in `~/.config/veckord/recents.json`.
+- **Audio Device Selection**: Allows selecting input and output devices using controller-native `@decky/ui` Dropdown controls while connected to voice.
+- **Audio Volume Sliders**: Provides input and output volume sliders (`SliderField`) with smooth controller navigation and debounced IPC updates.
+- **Live Audio Level Metering**: Visual input (microphone) and output level meters (`AudioLevelMeters.tsx`) with real-time speaking indicators.
+- **Modular Component Architecture**: Refactored frontend into focused sub-components (`VoiceCard.tsx`, `RecentChannels.tsx`, `AudioControls.tsx`, `AudioLevelMeters.tsx`, `ConnectionStatus.tsx`).
+- **Display Streaming Feasibility Audit**: Standalone proof-of-concept and findings report (`experiments/display-streaming-probe/` and `docs/display_streaming_findings.md`) evaluating Wayland / PipeWire / `xdg-desktop-portal` behavior in Steam Gaming Mode.
+
 ## [1.0.3] - 2026-07-28
 
 ### Added

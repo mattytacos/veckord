@@ -15,6 +15,6 @@
     "strict": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src"],
+  "include": ["src", "vencordBridge/types.ts"],
   "exclude": ["node_modules"]
 }

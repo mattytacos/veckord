@@ -140,6 +140,22 @@ export default definePlugin({
                     } else if (method === "setDeafened") {
                         await adapter.setDeafened(!!params?.deafened);
                         result = { success: true };
+                    } else if (method === "getAudioDevices") {
+                        result = adapter.getAudioDevices ? adapter.getAudioDevices() : {};
+                    } else if (method === "setAudioDevice") {
+                        if (adapter.setAudioDevice) {
+                            await adapter.setAudioDevice(params?.type, params?.deviceId);
+                        }
+                        result = { success: true };
+                    } else if (method === "getAudioVolumes") {
+                        result = adapter.getAudioVolumes ? adapter.getAudioVolumes() : { inputVolume: 100, outputVolume: 100 };
+                    } else if (method === "setAudioVolume") {
+                        if (adapter.setAudioVolume) {
+                            await adapter.setAudioVolume(params?.type, params?.volume);
+                        }
+                        result = { success: true };
+                    } else if (method === "getAudioLevels") {
+                        result = adapter.getAudioLevels ? adapter.getAudioLevels() : { inputLevel: 0, outputLevel: 0, isSpeaking: false };
                     } else {
                         throw new Error(`Unknown method in renderer: ${method}`);
                     }

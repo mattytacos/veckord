@@ -45,7 +45,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 # Version
 # ---------------------------------------------------------------------------
-INSTALLER_VERSION = "1.0.3"
+INSTALLER_VERSION = "1.1.0"
 
 # ---------------------------------------------------------------------------
 # Dynamic base paths — NEVER hardcoded

@@ -14,43 +14,16 @@ Schema stored:
 """
 
 import os
-import json
 from typing import List, Dict, Any, Optional
+
+try:
+    from backend.persistence import resolve_persistence_path, load_json_data, atomic_write_json
+except ImportError:
+    from persistence import resolve_persistence_path, load_json_data, atomic_write_json
 
 
 def resolve_settings_path() -> str:
-    decky_settings = os.environ.get("DECKY_PLUGIN_SETTINGS_DIR")
-    if decky_settings and os.path.exists(decky_settings):
-        base_dir = decky_settings
-        return os.path.join(base_dir, "favorites.json")
-
-    home = os.environ.get("HOME") or os.path.expanduser("~")
-    primary_dir = os.path.join(home, ".config", "veckord")
-    legacy_dir = os.path.join(home, ".config", "deckord")
-    primary_file = os.path.join(primary_dir, "favorites.json")
-    legacy_file = os.path.join(legacy_dir, "favorites.json")
-
-    if os.path.exists(primary_file):
-        return primary_file
-    elif os.path.exists(legacy_file):
-        # Auto-migrate legacy favorites file to primary directory
-        try:
-            os.makedirs(primary_dir, mode=0o700, exist_ok=True)
-            with open(legacy_file, "r", encoding="utf-8") as f_old:
-                data = f_old.read()
-            with open(primary_file, "w", encoding="utf-8") as f_new:
-                f_new.write(data)
-            return primary_file
-        except Exception:
-            return legacy_file
-
-    if not os.path.exists(primary_dir):
-        try:
-            os.makedirs(primary_dir, mode=0o700, exist_ok=True)
-        except Exception:
-            pass
-
-    return primary_file
+    return resolve_persistence_path("favorites.json")
 
 
 class FavoritesManager:
@@ -62,37 +35,28 @@ class FavoritesManager:
         self.file_path = file_path or resolve_settings_path()
 
     def get_favorites(self) -> List[Dict[str, str]]:
-        if not os.path.exists(self.file_path):
+        data = load_json_data(self.file_path)
+        if not isinstance(data, list):
             return []
 
-        try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        valid_favorites: List[Dict[str, str]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            guild_id = item.get("guild_id")
+            channel_id = item.get("channel_id")
+            guild_name = item.get("guild_name", "Unknown Server")
+            channel_name = item.get("channel_name", "Unknown Channel")
 
-            if not isinstance(data, list):
-                return []
+            if guild_id and channel_id:
+                valid_favorites.append({
+                    "guild_id": str(guild_id),
+                    "channel_id": str(channel_id),
+                    "guild_name": str(guild_name),
+                    "channel_name": str(channel_name),
+                })
 
-            valid_favorites: List[Dict[str, str]] = []
-            for item in data:
-                if not isinstance(item, dict):
-                    continue
-                guild_id = item.get("guild_id")
-                channel_id = item.get("channel_id")
-                guild_name = item.get("guild_name", "Unknown Server")
-                channel_name = item.get("channel_name", "Unknown Channel")
-
-                if guild_id and channel_id:
-                    valid_favorites.append({
-                        "guild_id": str(guild_id),
-                        "channel_id": str(channel_id),
-                        "guild_name": str(guild_name),
-                        "channel_name": str(channel_name),
-                    })
-
-            return valid_favorites
-        except Exception as e:
-            print(f"[VeckordFavorites] Read error: {e}")
-            return []
+        return valid_favorites
 
     def set_favorites(self, favorites: List[Dict[str, Any]]) -> bool:
         if not isinstance(favorites, list):
@@ -115,17 +79,7 @@ class FavoritesManager:
                     "channel_name": str(channel_name),
                 })
 
-        try:
-            parent_dir = os.path.dirname(self.file_path)
-            if not os.path.exists(parent_dir):
-                os.makedirs(parent_dir, mode=0o700, exist_ok=True)
-
-            with open(self.file_path, "w", encoding="utf-8") as f:
-                json.dump(sanitized, f, indent=2)
-            return True
-        except Exception as e:
-            print(f"[VeckordFavorites] Write error: {e}")
-            return False
+        return atomic_write_json(self.file_path, sanitized)
 
     def add_favorite(self, guild_id: str, channel_id: str, guild_name: str, channel_name: str) -> bool:
         favs = self.get_favorites()

@@ -123,6 +123,29 @@ class TestBuildRelease(unittest.TestCase):
                         B.build_vencord_dist(self.tmp / "vencord-dist.zip", epoch=1769558400)
                     self.assertIn("does not contain the bridge plugin", str(ctx.exception))
 
+    def test_build_vencord_dist_includes_package_json(self):
+        """build_vencord_dist includes package.json containing {} in the output archive."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout="83b74e2305cb4718b3d55af5fbd93ade50d2bb50\n")
+            with patch.object(B, "ensure_node_env", return_value=(Path("/bin/node"), Path("/bin/pnpm"))):
+                with patch.object(B, "ROOT_DIR", self.tmp):
+                    vencord_src = self.tmp / ".cache" / "vencord-build" / "vencord-src"
+                    (vencord_src / ".git").mkdir(parents=True)
+                    (self.tmp / "vencordBridge").mkdir(parents=True)
+                    (self.tmp / "LICENSE").write_text("MIT")
+                    dist_dir = vencord_src / "dist"
+                    dist_dir.mkdir(parents=True)
+                    (dist_dir / "patcher.js").write_text("// patcher deckordBridge")
+                    (dist_dir / "renderer.js").write_text("// renderer VeckordBridge")
+
+                    out_zip = self.tmp / "vencord-dist.zip"
+                    B.build_vencord_dist(out_zip, epoch=1769558400)
+                    self.assertTrue(out_zip.exists())
+
+                    with zipfile.ZipFile(out_zip, "r") as zf:
+                        self.assertIn("package.json", zf.namelist())
+                        self.assertEqual(zf.read("package.json").decode("utf-8").strip(), "{}")
+
     def test_archive_path_traversal_detection(self):
         """Validate that path traversal in zip archives is detected and rejected."""
         dest = self.tmp / "extracted"
@@ -184,7 +207,7 @@ class TestBuildRelease(unittest.TestCase):
         dl_dir = self.tmp / "downloads"
         dl_dir.mkdir()
         (dl_dir / "checksums.sha256").write_text("invalid checksums")
-        target_plugin_dir = self.tmp / "homebrew" / "plugins" / "Deckord"
+        target_plugin_dir = self.tmp / "homebrew" / "plugins" / "Veckord"
 
         with patch.object(I, "is_bazzite", return_value=True), \
              patch.object(I, "is_vesktop_installed", return_value=True), \

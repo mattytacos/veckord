@@ -18,6 +18,11 @@ try:
 except ImportError:
     from favorites_manager import FavoritesManager
 
+try:
+    from backend.recents_manager import RecentsManager
+except ImportError:
+    from recents_manager import RecentsManager
+
 
 class VeckordBackend:
     """
@@ -28,6 +33,7 @@ class VeckordBackend:
         self.socket_path = socket_path or resolve_socket_path()
         self.timeout = timeout
         self.favorites_mgr = FavoritesManager()
+        self.recents_mgr = RecentsManager()
 
     def _execute_bridge_call(self, method: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         try:
@@ -223,7 +229,42 @@ class VeckordBackend:
             },
         }
 
-    def join_voice_channel(self, channel_id: str, guild_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_recent_channels(self) -> Dict[str, Any]:
+        recents = self.recents_mgr.get_recents()
+        return {
+            "ok": True,
+            "data": {
+                "recents": recents,
+            },
+        }
+
+    def record_recent_channel(self, guild_id: str, channel_id: str, guild_name: str, channel_name: str) -> Dict[str, Any]:
+        success = self.recents_mgr.record_recent(guild_id, channel_id, guild_name, channel_name)
+        if success:
+            return {
+                "ok": True,
+                "data": {
+                    "recents": self.recents_mgr.get_recents(),
+                },
+            }
+        return {
+            "ok": False,
+            "error": {
+                "code": "PERSISTENCE_ERROR",
+                "message": "Failed to record recent channel",
+            },
+        }
+
+    def clear_recents(self) -> Dict[str, Any]:
+        success = self.recents_mgr.clear_recents()
+        return {
+            "ok": success,
+            "data": {
+                "recents": [],
+            },
+        }
+
+    def join_voice_channel(self, channel_id: str, guild_id: Optional[str] = None, guild_name: Optional[str] = None, channel_name: Optional[str] = None) -> Dict[str, Any]:
         if not channel_id or not str(channel_id).strip():
             return {
                 "ok": False,
@@ -237,7 +278,19 @@ class VeckordBackend:
         if guild_id:
             params["guildId"] = str(guild_id)
 
-        return self._execute_bridge_call("joinVoiceChannel", params)
+        res = self._execute_bridge_call("joinVoiceChannel", params)
+        if res.get("ok") and guild_id and channel_id:
+            # If names are not provided directly, check favorites for matching names
+            g_name = guild_name or "Voice Server"
+            c_name = channel_name or "Voice Channel"
+            for f in self.favorites_mgr.get_favorites():
+                if f.get("channel_id") == str(channel_id):
+                    g_name = f.get("guild_name", g_name)
+                    c_name = f.get("channel_name", c_name)
+                    break
+            self.recents_mgr.record_recent(str(guild_id), str(channel_id), str(g_name), str(c_name))
+
+        return res
 
     def leave_voice_channel(self) -> Dict[str, Any]:
         return self._execute_bridge_call("leaveVoiceChannel")
@@ -247,3 +300,18 @@ class VeckordBackend:
 
     def set_deafened(self, deafened: bool) -> Dict[str, Any]:
         return self._execute_bridge_call("setDeafened", {"deafened": bool(deafened)})
+
+    def get_audio_devices(self) -> Dict[str, Any]:
+        return self._execute_bridge_call("getAudioDevices")
+
+    def set_audio_device(self, device_type: str, device_id: str) -> Dict[str, Any]:
+        return self._execute_bridge_call("setAudioDevice", {"type": str(device_type), "deviceId": str(device_id)})
+
+    def get_audio_volumes(self) -> Dict[str, Any]:
+        return self._execute_bridge_call("getAudioVolumes")
+
+    def set_audio_volume(self, device_type: str, volume: float) -> Dict[str, Any]:
+        return self._execute_bridge_call("setAudioVolume", {"type": str(device_type), "volume": float(volume)})
+
+    def get_audio_levels(self) -> Dict[str, Any]:
+        return self._execute_bridge_call("getAudioLevels")

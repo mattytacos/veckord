@@ -1,4 +1,4 @@
-# Veckord Installation Guide v1.0.3
+# Veckord Installation Guide v1.1.0
 
 **Veckord** is a controller-native Decky Loader plugin that controls Discord voice channels from the Steam Gaming Mode quick-access panel. It works exclusively with **Vesktop** (Flatpak `dev.vencord.Vesktop`) and **Decky Loader** on **Bazzite**.
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Release Assets (v1.0.3)
+## Release Assets (v1.1.0)
 
 Each GitHub release at `https://github.com/mattytacos/veckord/releases` contains:
 
@@ -36,26 +36,26 @@ Each GitHub release at `https://github.com/mattytacos/veckord/releases` contains
 ### 1. Download Installer Script
 
 ```bash
-wget https://github.com/mattytacos/veckord/releases/download/v1.0.3/install.py
+wget https://github.com/mattytacos/veckord/releases/download/v1.1.0/install.py
 ```
 
 ### 2. Check System Status (Read-Only)
 
 ```bash
-python3 install.py --tag v1.0.3 check
+python3 install.py --tag v1.1.0 check
 ```
 
 ### 3. Fresh Installation or Upgrade
 
 ```bash
 # Close Vesktop first, then run:
-python3 install.py --tag v1.0.3 install
+python3 install.py --tag v1.1.0 install
 ```
 
 ### 4. Update an Existing Installation
 
 ```bash
-python3 install.py --tag v1.0.3 update
+python3 install.py --tag v1.1.0 update
 ```
 
 ### 5. Repair Configuration

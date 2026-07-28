@@ -457,4 +457,115 @@ export class VencordDiscordVoiceAdapter implements DiscordVoiceAdapter {
             throw new Error(`DEAFEN_STATE_NOT_CONFIRMED: Requested deafened=${deafened}, but MediaEngineStore.isSelfDeaf() remains ${finalState}.`);
         }
     }
+
+    getAudioDevices(): AudioDeviceSettings {
+        try {
+            const store = this.mediaEngineStore;
+            if (!store) {
+                return { inputDevices: [], outputDevices: [], currentInputId: "default", currentOutputId: "default", inputVolume: 100, outputVolume: 100 };
+            }
+
+            const rawInputs = typeof store.getInputDevices === "function" ? store.getInputDevices() : {};
+            const rawOutputs = typeof store.getOutputDevices === "function" ? store.getOutputDevices() : {};
+
+            const parseDevices = (raw: any): AudioDevice[] => {
+                if (!raw) return [];
+                const list = Array.isArray(raw) ? raw : Object.values(raw);
+                return list.map((d: any) => ({
+                    id: String(d.id || d.value || "default"),
+                    name: String(d.name || d.label || "Default Device"),
+                }));
+            };
+
+            const currentInputId = typeof store.getInputDeviceId === "function" ? String(store.getInputDeviceId() || "default") : "default";
+            const currentOutputId = typeof store.getOutputDeviceId === "function" ? String(store.getOutputDeviceId() || "default") : "default";
+            const inputVolume = typeof store.getInputVolume === "function" ? Math.round(Number(store.getInputVolume()) || 100) : 100;
+            const outputVolume = typeof store.getOutputVolume === "function" ? Math.round(Number(store.getOutputVolume()) || 100) : 100;
+
+            return {
+                inputDevices: parseDevices(rawInputs),
+                outputDevices: parseDevices(rawOutputs),
+                currentInputId,
+                currentOutputId,
+                inputVolume,
+                outputVolume,
+            };
+        } catch (e) {
+            console.error("[VeckordAdapter] getAudioDevices error:", e);
+            return { inputDevices: [], outputDevices: [], currentInputId: "default", currentOutputId: "default", inputVolume: 100, outputVolume: 100 };
+        }
+    }
+
+    async setAudioDevice(type: "input" | "output", deviceId: string): Promise<void> {
+        const actions = this.mediaEngineActions;
+        if (!actions) throw new Error("MEDIA_ENGINE_ACTIONS_UNAVAILABLE");
+
+        if (type === "input") {
+            if (typeof actions.setInputDevice === "function") {
+                actions.setInputDevice(deviceId);
+            } else {
+                throw new Error("SET_INPUT_DEVICE_UNAVAILABLE");
+            }
+        } else {
+            if (typeof actions.setOutputDevice === "function") {
+                actions.setOutputDevice(deviceId);
+            } else {
+                throw new Error("SET_OUTPUT_DEVICE_UNAVAILABLE");
+            }
+        }
+    }
+
+    getAudioVolumes(): { inputVolume: number; outputVolume: number } {
+        try {
+            const store = this.mediaEngineStore;
+            const inputVolume = store && typeof store.getInputVolume === "function" ? Math.round(Number(store.getInputVolume()) || 100) : 100;
+            const outputVolume = store && typeof store.getOutputVolume === "function" ? Math.round(Number(store.getOutputVolume()) || 100) : 100;
+            return { inputVolume, outputVolume };
+        } catch (e) {
+            return { inputVolume: 100, outputVolume: 100 };
+        }
+    }
+
+    async setAudioVolume(type: "input" | "output", volume: number): Promise<void> {
+        const actions = this.mediaEngineActions;
+        if (!actions) throw new Error("MEDIA_ENGINE_ACTIONS_UNAVAILABLE");
+
+        const target = Math.max(0, Math.min(200, volume));
+        if (type === "input") {
+            if (typeof actions.setInputVolume === "function") {
+                actions.setInputVolume(target);
+            } else {
+                throw new Error("SET_INPUT_VOLUME_UNAVAILABLE");
+            }
+        } else {
+            if (typeof actions.setOutputVolume === "function") {
+                actions.setOutputVolume(target);
+            } else {
+                throw new Error("SET_OUTPUT_VOLUME_UNAVAILABLE");
+            }
+        }
+    }
+
+    getAudioLevels(): AudioLevels {
+        try {
+            const store = this.mediaEngineStore;
+            if (!store) return { inputLevel: 0, outputLevel: 0, isSpeaking: false };
+
+            const isSpeaking = typeof store.getSpeaking === "function" ? Boolean(store.getSpeaking()) : false;
+            let inputLevel = 0;
+            let outputLevel = 0;
+
+            if (typeof store.getInputLevel === "function") {
+                inputLevel = Math.max(0, Math.min(1, Number(store.getInputLevel()) || 0));
+            }
+            if (typeof store.getOutputLevel === "function") {
+                outputLevel = Math.max(0, Math.min(1, Number(store.getOutputLevel()) || 0));
+            }
+
+            return { inputLevel, outputLevel, isSpeaking };
+        } catch (e) {
+            return { inputLevel: 0, outputLevel: 0, isSpeaking: false };
+        }
+    }
 }
+

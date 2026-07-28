@@ -60,13 +60,22 @@ class Plugin:
         print(f"[VeckordPlugin] move_favorite invoked: {channel_id} {direction}", flush=True)
         return backend.move_favorite(channel_id, direction)
 
+    async def get_recent_channels(self):
+        return backend.get_recent_channels()
+
+    async def record_recent_channel(self, guild_id, channel_id, guild_name, channel_name):
+        return backend.record_recent_channel(guild_id, channel_id, guild_name, channel_name)
+
+    async def clear_recents(self):
+        return backend.clear_recents()
+
     async def get_guilds_and_channels(self):
         print("[VeckordPlugin] get_guilds_and_channels invoked", flush=True)
         return backend.get_guilds_and_channels()
 
-    async def join_voice_channel(self, channel_id, guild_id=None):
+    async def join_voice_channel(self, channel_id, guild_id=None, guild_name=None, channel_name=None):
         print(f"[VeckordPlugin] join_voice_channel invoked with channel_id={channel_id}, guild_id={guild_id}", flush=True)
-        return backend.join_voice_channel(channel_id, guild_id)
+        return backend.join_voice_channel(channel_id, guild_id, guild_name, channel_name)
 
     async def leave_voice_channel(self):
         print("[VeckordPlugin] leave_voice_channel invoked", flush=True)
@@ -79,3 +88,20 @@ class Plugin:
     async def set_deafened(self, deafened):
         print(f"[VeckordPlugin] set_deafened invoked with deafened={deafened}", flush=True)
         return backend.set_deafened(deafened)
+
+    async def get_audio_devices(self):
+        return backend.get_audio_devices()
+
+    async def set_audio_device(self, device_type, device_id):
+        print(f"[VeckordPlugin] set_audio_device invoked: {device_type} -> {device_id}", flush=True)
+        return backend.set_audio_device(device_type, device_id)
+
+    async def get_audio_volumes(self):
+        return backend.get_audio_volumes()
+
+    async def set_audio_volume(self, device_type, volume):
+        print(f"[VeckordPlugin] set_audio_volume invoked: {device_type} -> {volume}", flush=True)
+        return backend.set_audio_volume(device_type, volume)
+
+    async def get_audio_levels(self):
+        return backend.get_audio_levels()

@@ -74,6 +74,11 @@ export const ALLOWED_METHODS = new Set([
     "leaveVoiceChannel",
     "setMuted",
     "setDeafened",
+    "getAudioDevices",
+    "setAudioDevice",
+    "getAudioVolumes",
+    "setAudioVolume",
+    "getAudioLevels",
 ]);
 
 /**
@@ -121,6 +126,22 @@ export function validateBridgeRequest(data: any): { valid: true; request: Bridge
         case "setDeafened":
             if (typeof params.deafened !== "boolean") {
                 return { valid: false, error: { code: BridgeErrorCode.INVALID_PARAMS, message: "Method 'setDeafened' requires boolean param 'deafened'" } };
+            }
+            break;
+        case "setAudioDevice":
+            if (typeof params.type !== "string" || (params.type !== "input" && params.type !== "output")) {
+                return { valid: false, error: { code: BridgeErrorCode.INVALID_PARAMS, message: "Method 'setAudioDevice' requires param 'type' to be 'input' or 'output'" } };
+            }
+            if (typeof params.deviceId !== "string" || !params.deviceId.trim()) {
+                return { valid: false, error: { code: BridgeErrorCode.INVALID_PARAMS, message: "Method 'setAudioDevice' requires non-empty string param 'deviceId'" } };
+            }
+            break;
+        case "setAudioVolume":
+            if (typeof params.type !== "string" || (params.type !== "input" && params.type !== "output")) {
+                return { valid: false, error: { code: BridgeErrorCode.INVALID_PARAMS, message: "Method 'setAudioVolume' requires param 'type' to be 'input' or 'output'" } };
+            }
+            if (typeof params.volume !== "number" || isNaN(params.volume) || params.volume < 0 || params.volume > 200) {
+                return { valid: false, error: { code: BridgeErrorCode.INVALID_PARAMS, message: "Method 'setAudioVolume' requires number param 'volume' between 0 and 200" } };
             }
             break;
     }

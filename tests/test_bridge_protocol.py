@@ -143,6 +143,65 @@ class TestBridgeProtocol(unittest.TestCase):
         client_sock.close()
         server_sock.close()
 
+    def test_audio_rpc_methods(self):
+        client_sock, server_sock = socket.socketpair()
+
+        def server_loop():
+            buffer = ""
+            while True:
+                data = server_sock.recv(4096)
+                if not data:
+                    break
+                buffer += data.decode("utf-8")
+                lines = buffer.split("\n")
+                buffer = lines.pop()
+                for line in lines:
+                    if not line.strip():
+                        continue
+                    req = json.loads(line)
+                    method = req["method"]
+                    if method == "getAudioDevices":
+                        res = {"inputDevices": [], "outputDevices": [], "currentInputId": "default", "currentOutputId": "default"}
+                    elif method == "setAudioDevice":
+                        res = {"success": True}
+                    elif method == "getAudioVolumes":
+                        res = {"inputVolume": 80, "outputVolume": 100}
+                    elif method == "setAudioVolume":
+                        res = {"success": True}
+                    elif method == "getAudioLevels":
+                        res = {"inputLevel": 0.5, "outputLevel": 0.2, "isSpeaking": True}
+                    else:
+                        res = {}
+                    resp = {"version": 1, "id": req["id"], "ok": True, "result": res}
+                    server_sock.sendall((json.dumps(resp) + "\n").encode("utf-8"))
+
+        import threading
+        t = threading.Thread(target=server_loop)
+        t.start()
+
+        client = VeckordBridgeClient()
+        client._socket = client_sock
+
+        devs = client.send_request("getAudioDevices")
+        self.assertEqual(devs["currentInputId"], "default")
+
+        set_dev = client.send_request("setAudioDevice", {"type": "input", "deviceId": "mic1"})
+        self.assertTrue(set_dev["success"])
+
+        vols = client.send_request("getAudioVolumes")
+        self.assertEqual(vols["inputVolume"], 80)
+
+        set_vol = client.send_request("setAudioVolume", {"type": "input", "volume": 90})
+        self.assertTrue(set_vol["success"])
+
+        levels = client.send_request("getAudioLevels")
+        self.assertEqual(levels["inputLevel"], 0.5)
+        self.assertTrue(levels["isSpeaking"])
+
+        server_sock.close()
+        t.join(timeout=2.0)
+        client_sock.close()
+
 
 if __name__ == "__main__":
     unittest.main()
