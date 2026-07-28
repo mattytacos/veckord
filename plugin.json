@@ -1,11 +1,15 @@
 {
   "name": "Veckord",
-  "version": "1.0.1",
-  "author": "mattytacos",
+  "version": "1.0.2",
+  "author": "Antigravity Team",
   "api_version": 1,
   "flags": [],
   "publish": {
-    "tags": ["audio", "voice", "discord"],
+    "tags": [
+      "audio",
+      "voice",
+      "discord"
+    ],
     "description": "Discord Decky Voice Controller for Vesktop",
     "image": ""
   }

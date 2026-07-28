@@ -5,6 +5,16 @@ All notable changes to Veckord will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-28
+
+### Added
+- **Precompiled Vesktop Bridge Release Artifact**: Added `vencord-dist.zip` containing a precompiled Vencord distribution with the `VeckordBridge` user plugin compiled in.
+- **Byte-for-Byte Reproducible Builds**: Hardened `scripts/build_release.py` to produce deterministic ZIP archives with normalized timestamps, sorted entries, and normalized file permissions.
+- **Official Node.js Checksum Verification**: Automatically fetches and verifies official Node.js `SHASUMS256.txt` manifest before extracting Node build tooling.
+- **Strict Vencord Commit & Node/pnpm Version Pinning**: Pinned Vencord commit `83b74e2305cb4718b3d55af5fbd93ade50d2bb50` (v1.15.0), Node.js `v22.14.0`, and pnpm `11.17.0`.
+- **Release Build Metadata**: Includes `build-metadata.json` in `vencord-dist.zip` detailing versions, commit SHA, timestamp, plugin identity, socket path, and installer compatibility constraints.
+- **Fail-Closed Installer Security**: Updated `scripts/install.py` to download and verify `checksums.sha256` for all release assets (`veckord.zip`, `vencordBridge.zip`, `vencord-dist.zip`) prior to extracting any archive.
+
 ## [1.0.1] - 2026-07-28
 
 ### Changed

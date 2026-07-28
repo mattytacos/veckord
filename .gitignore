@@ -41,6 +41,9 @@ secrets/
 *.swp
 *.swo
 
-# Release Package Archives
+# Release Package Archives & Generated Build Artifacts
 *.zip
 *.tar.gz
+checksums.sha256
+/install.py
+.cache/
