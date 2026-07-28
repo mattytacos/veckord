@@ -8,27 +8,10 @@ import os
 import sys
 from typing import Dict, Any, Optional, List
 
-# Add experiments/bridge-client to import path if needed
-bridge_client_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "experiments", "bridge-client"))
-if bridge_client_path not in sys.path:
-    sys.path.insert(0, bridge_client_path)
-
 try:
-    from client import VeckordBridgeClient, resolve_socket_path
+    from backend.bridge_client import VeckordBridgeClient, resolve_socket_path
 except ImportError:
-    def resolve_socket_path() -> str:
-        xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
-        uid = str(os.getuid()) if hasattr(os, "getuid") else "1000"
-        base_dir = xdg_runtime or f"/run/user/{uid}"
-        return os.path.join(base_dir, "veckord", "bridge.sock")
-
-    class VeckordBridgeClient:
-        def __init__(self, socket_path: Optional[str] = None, timeout: float = 15.0):
-            self.socket_path = socket_path or resolve_socket_path()
-            self.timeout = timeout
-
-        def send_request(self, method: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-            raise FileNotFoundError(f"Bridge client unavailable at {self.socket_path}")
+    from bridge_client import VeckordBridgeClient, resolve_socket_path
 
 try:
     from backend.favorites_manager import FavoritesManager

@@ -136,34 +136,34 @@ const S = {
         boxSizing: "border-box" as const,
         wordBreak: "break-word" as const,
     },
-    // Outlined/secondary style for Manage button — transparent background, visible border
-    manageButton: {
-        display: "block",
-        width: "100%",
+    // Outlined/secondary style for Manage button — transparent background, no border stroke
+    manageButtonWrapper: {
         marginTop: "4px",
-        padding: "6px 10px",
         background: "transparent",
-        border: "1px solid rgba(255,255,255,0.2)",
-        borderRadius: "4px",
-        color: "#8e9297",
-        fontSize: "12px",
-        textAlign: "center" as const,
-        cursor: "pointer",
-        boxSizing: "border-box" as const,
+        border: "none",
+        boxShadow: "none",
+        opacity: 0.85,
     },
-    manageButtonActive: {
-        display: "block",
-        width: "100%",
-        marginTop: "4px",
-        padding: "6px 10px",
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.3)",
-        borderRadius: "4px",
-        color: "#dcddde",
-        fontSize: "12px",
+    manageButtonContent: {
+        fontSize: "11px",
+        color: "#8e9297",
         textAlign: "center" as const,
-        cursor: "pointer",
-        boxSizing: "border-box" as const,
+        fontWeight: "normal" as const,
+        background: "transparent",
+    },
+    doneButtonWrapper: {
+        marginTop: "4px",
+        background: "transparent",
+        border: "none",
+        boxShadow: "none",
+        opacity: 0.95,
+    },
+    doneButtonContent: {
+        fontSize: "11px",
+        color: "#dcddde",
+        textAlign: "center" as const,
+        fontWeight: "bold" as const,
+        background: "transparent",
     },
 };
 
@@ -626,6 +626,24 @@ function VeckordContent() {
 
     return (
         <PanelSection title="Veckord">
+            <style>{`
+                .veckord-manage-button,
+                .veckord-manage-button button,
+                .veckord-manage-button > div,
+                [class*="veckord-manage-button"] {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+                .veckord-manage-button:hover,
+                .veckord-manage-button:focus,
+                .veckord-manage-button:focus-within,
+                .veckord-manage-button.gpFocus {
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 4px !important;
+                }
+            `}</style>
 
             {/* Status row */}
             <PanelSectionRow>
@@ -748,13 +766,16 @@ function VeckordContent() {
 
                                 {/* Secondary manage toggle — outlined, not filled */}
                                 {!isManaging ? (
-                                    <button
-                                        style={S.manageButton}
-                                        onClick={() => setManagingFavoriteId(fav.channel_id)}
-                                        disabled={isActionPending}
-                                    >
-                                        ⋯ Manage
-                                    </button>
+                                    <div style={S.manageButtonWrapper}>
+                                        <ButtonItem
+                                            layout="below"
+                                            onClick={() => setManagingFavoriteId(fav.channel_id)}
+                                            disabled={isActionPending}
+                                            {...({ className: "veckord-manage-button" } as any)}
+                                        >
+                                            <div style={S.manageButtonContent}>⋯ Manage</div>
+                                        </ButtonItem>
+                                    </div>
                                 ) : (
                                     <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
                                         {index > 0 && (
@@ -770,12 +791,15 @@ function VeckordContent() {
                                         <ButtonItem layout="below" onClick={() => handleRemoveFavorite(fav.channel_id)} disabled={isActionPending}>
                                             Remove from Favorites
                                         </ButtonItem>
-                                        <button
-                                            style={S.manageButtonActive}
-                                            onClick={() => setManagingFavoriteId(null)}
-                                        >
-                                            Done
-                                        </button>
+                                        <div style={S.doneButtonWrapper}>
+                                            <ButtonItem
+                                                layout="below"
+                                                onClick={() => setManagingFavoriteId(null)}
+                                                {...({ className: "veckord-manage-button" } as any)}
+                                            >
+                                                <div style={S.doneButtonContent}>Done</div>
+                                            </ButtonItem>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -17,7 +17,7 @@ import {
 import { VencordDiscordVoiceAdapter } from "./discordAdapter";
 import { UserSummary, GuildSummary, VoiceChannelSummary, VoiceSettings } from "./types";
 
-const Native = VencordNative.pluginHelpers.VeckordBridge as PluginNative<typeof import("./native")>;
+const Native = (VencordNative.pluginHelpers.VeckordBridge || VencordNative.pluginHelpers.DeckordBridge) as PluginNative<typeof import("./native")>;
 const adapter = new VencordDiscordVoiceAdapter();
 
 let isWorkerRunning: boolean = false;

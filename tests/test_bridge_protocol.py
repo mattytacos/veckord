@@ -9,12 +9,11 @@ import socket
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Dynamically import bridge client from experiments/bridge-client/client.py
-bridge_client_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "experiments", "bridge-client"))
-if bridge_client_dir not in sys.path:
-    sys.path.insert(0, bridge_client_dir)
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
-from client import VeckordBridgeClient, resolve_socket_path
+from bridge_client import VeckordBridgeClient, resolve_socket_path
 
 
 class TestBridgeProtocol(unittest.TestCase):
@@ -32,7 +31,7 @@ class TestBridgeProtocol(unittest.TestCase):
         self.assertEqual(parsed["id"], "test-req-1")
 
     def test_resolve_socket_path(self):
-        with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/1000"}):
+        with patch.dict(os.environ, {"XDG_RUNTIME_DIR": "/run/user/1000"}), patch("os.path.exists", return_value=False):
             path = resolve_socket_path()
             self.assertEqual(path, "/run/user/1000/veckord/bridge.sock")
 

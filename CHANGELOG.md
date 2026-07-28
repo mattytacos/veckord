@@ -5,6 +5,15 @@ All notable changes to Veckord will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-07-28
+
+### Changed
+- **Project Rebrand**: Renamed project from Deckord to **Veckord** across all UI strings, plugin manifests, build scripts, and documentation.
+- **Settings Auto-Migration**: Automatically migrates existing saved favorite voice channels from `~/.config/deckord/favorites.json` to `~/.config/veckord/favorites.json` upon launch.
+- **IPC Socket Fallback**: Connects to primary `/run/user/<uid>/veckord/bridge.sock`, with automatic fallback to legacy `/run/user/<uid>/deckord/bridge.sock` if present.
+- **Environment Variable Fallback**: Accepts legacy `DECKORD_DISCORD_CLIENT_ID` and `DECKORD_DISCORD_CLIENT_SECRET` as fallbacks for `VECKORD_*` variables.
+- **Duplicate Plugin Self-Cleanup**: Automatically cleans legacy `~/homebrew/plugins/Deckord` directory upon loading to prevent duplicate plugin entries in Decky Loader.
+
 ## [1.0.0] - 2026-07-28
 
 ### Added

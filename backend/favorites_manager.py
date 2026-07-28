@@ -22,22 +22,35 @@ def resolve_settings_path() -> str:
     decky_settings = os.environ.get("DECKY_PLUGIN_SETTINGS_DIR")
     if decky_settings and os.path.exists(decky_settings):
         base_dir = decky_settings
-    else:
-        home = os.environ.get("HOME") or os.path.expanduser("~")
-        primary_dir = os.path.join(home, ".config", "veckord")
-        legacy_dir = os.path.join(home, ".config", "deckord")
-        if not os.path.exists(primary_dir) and os.path.exists(legacy_dir):
-            base_dir = legacy_dir
-        else:
-            base_dir = primary_dir
+        return os.path.join(base_dir, "favorites.json")
 
-    if not os.path.exists(base_dir):
+    home = os.environ.get("HOME") or os.path.expanduser("~")
+    primary_dir = os.path.join(home, ".config", "veckord")
+    legacy_dir = os.path.join(home, ".config", "deckord")
+    primary_file = os.path.join(primary_dir, "favorites.json")
+    legacy_file = os.path.join(legacy_dir, "favorites.json")
+
+    if os.path.exists(primary_file):
+        return primary_file
+    elif os.path.exists(legacy_file):
+        # Auto-migrate legacy favorites file to primary directory
         try:
-            os.makedirs(base_dir, mode=0o700, exist_ok=True)
+            os.makedirs(primary_dir, mode=0o700, exist_ok=True)
+            with open(legacy_file, "r", encoding="utf-8") as f_old:
+                data = f_old.read()
+            with open(primary_file, "w", encoding="utf-8") as f_new:
+                f_new.write(data)
+            return primary_file
+        except Exception:
+            return legacy_file
+
+    if not os.path.exists(primary_dir):
+        try:
+            os.makedirs(primary_dir, mode=0o700, exist_ok=True)
         except Exception:
             pass
 
-    return os.path.join(base_dir, "favorites.json")
+    return primary_file
 
 
 class FavoritesManager:

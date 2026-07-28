@@ -37,15 +37,15 @@ def cmd_handshake(args: argparse.Namespace) -> int:
 
 
 def cmd_authenticate(args: argparse.Namespace) -> int:
-    client_id = args.client_id or os.environ.get("VECKORD_DISCORD_CLIENT_ID")
-    client_secret = args.client_secret or os.environ.get("VECKORD_DISCORD_CLIENT_SECRET")
+    client_id = args.client_id or os.environ.get("VECKORD_DISCORD_CLIENT_ID") or os.environ.get("DECKORD_DISCORD_CLIENT_ID")
+    client_secret = args.client_secret or os.environ.get("VECKORD_DISCORD_CLIENT_SECRET") or os.environ.get("DECKORD_DISCORD_CLIENT_SECRET")
 
     # Verify presence of environment variables without printing their values
     missing_vars = []
     if not client_id:
-        missing_vars.append("VECKORD_DISCORD_CLIENT_ID")
+        missing_vars.append("VECKORD_DISCORD_CLIENT_ID (or DECKORD_DISCORD_CLIENT_ID)")
     if not client_secret:
-        missing_vars.append("VECKORD_DISCORD_CLIENT_SECRET")
+        missing_vars.append("VECKORD_DISCORD_CLIENT_SECRET (or DECKORD_DISCORD_CLIENT_SECRET)")
 
     if missing_vars:
         print(f"Error: Required environment variable(s) missing: {', '.join(missing_vars)}", file=sys.stderr)

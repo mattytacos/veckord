@@ -1,6 +1,6 @@
 {
   "name": "veckord",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Discord Decky Voice Controller for Vesktop",
   "type": "module",
   "scripts": {
