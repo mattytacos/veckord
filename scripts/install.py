@@ -55,7 +55,8 @@ UID: int = os.getuid()
 RUNTIME_DIR: Path = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{UID}"))
 
 DECKY_PLUGINS_ROOT: Path = HOME / "homebrew" / "plugins"
-DECKY_PLUGIN_DIR: Path = DECKY_PLUGINS_ROOT / "Deckord"  # filesystem dir — do NOT rename
+DECKY_PLUGIN_DIR: Path = DECKY_PLUGINS_ROOT / "Veckord"
+LEGACY_DECKY_PLUGIN_DIR: Path = DECKY_PLUGINS_ROOT / "Deckord"
 VESKTOP_CONFIG: Path = HOME / ".var" / "app" / "dev.vencord.Vesktop" / "config" / "vesktop"
 MANAGED_ROOT: Path = HOME / ".local" / "share" / "veckord"
 MANAGED_VENCORD_DIR: Path = MANAGED_ROOT / "vencord"
@@ -69,7 +70,8 @@ BRIDGE_SOCKET_VECKORD: Path = RUNTIME_DIR / "veckord" / "bridge.sock"
 GITHUB_REPO = "mattytacos/veckord"
 VESKTOP_FLATPAK_ID = "dev.vencord.Vesktop"
 DECKY_SERVICE = "plugin_loader.service"
-PLUGIN_DIR_NAME = "Deckord"        # filesystem dir name — immutable
+PLUGIN_DIR_NAME = "Veckord"        # canonical filesystem dir name
+LEGACY_PLUGIN_DIR_NAME = "Deckord" # legacy filesystem dir name
 PLUGIN_DISPLAY_NAME = "Veckord"   # display name in plugin.json
 
 # All Vencord plugin setting keys to enable (covers old compiled + new source names)
@@ -232,9 +234,10 @@ def get_decky_service_active() -> bool:
 
 
 def get_plugin_info() -> Tuple[Optional[str], Optional[str]]:
-    """Return (version, display_name) from DECKY_PLUGIN_DIR, or (None, None)."""
-    pkg_path = DECKY_PLUGIN_DIR / "package.json"
-    plugin_path = DECKY_PLUGIN_DIR / "plugin.json"
+    """Return (version, display_name) from DECKY_PLUGIN_DIR (or LEGACY_DECKY_PLUGIN_DIR), or (None, None)."""
+    target_dir = DECKY_PLUGIN_DIR if DECKY_PLUGIN_DIR.exists() else LEGACY_DECKY_PLUGIN_DIR
+    pkg_path = target_dir / "package.json"
+    plugin_path = target_dir / "plugin.json"
     version = None
     display_name = None
     if pkg_path.exists():
@@ -252,9 +255,7 @@ def get_plugin_info() -> Tuple[Optional[str], Optional[str]]:
 
 def check_duplicate_plugin_dirs() -> bool:
     """Return True if BOTH Deckord/ and Veckord/ exist under DECKY_PLUGINS_ROOT."""
-    deckord = DECKY_PLUGINS_ROOT / "Deckord"
-    veckord = DECKY_PLUGINS_ROOT / "Veckord"
-    return deckord.exists() and veckord.exists()
+    return LEGACY_DECKY_PLUGIN_DIR.exists() and DECKY_PLUGIN_DIR.exists()
 
 
 def is_symlink_target(path: Path) -> bool:
@@ -262,9 +263,38 @@ def is_symlink_target(path: Path) -> bool:
     return path.is_symlink()
 
 
+REQUIRED_MANAGED_VENCORD_FILES = (
+    "package.json",
+    "vencordDesktopMain.js",
+    "renderer.js",
+    "preload.js",
+    "renderer.css",
+    "build-metadata.json",
+    "patcher.js",
+)
+
+
+def ensure_managed_vencord_package_json(vencord_dir: Path) -> bool:
+    """
+    Ensure package.json exists in vencord_dir.
+    Writes package.json containing '{}' atomically on the host filesystem if missing.
+    Returns True if package.json was created, False if it already existed.
+    """
+    pkg_path = vencord_dir / "package.json"
+    if pkg_path.exists():
+        return False
+    vencord_dir.mkdir(parents=True, exist_ok=True)
+    tmp_path = vencord_dir / ".package.json.tmp"
+    tmp_path.write_text("{}\n", encoding="utf-8")
+    tmp_path.replace(pkg_path)
+    return True
+
+
 def get_managed_vencord_ok() -> bool:
-    """Return True if MANAGED_VENCORD_DIR exists and contains patcher.js."""
-    return (MANAGED_VENCORD_DIR / "patcher.js").exists()
+    """Return True if MANAGED_VENCORD_DIR exists and contains all required Vencord distribution files."""
+    if not MANAGED_VENCORD_DIR.exists():
+        return False
+    return all((MANAGED_VENCORD_DIR / fname).exists() for fname in REQUIRED_MANAGED_VENCORD_FILES)
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +337,9 @@ def write_vencord_dir(new_path: str) -> None:
 
 
 def repair_vencord_dir() -> None:
-    """Update vencordDir to point to MANAGED_VENCORD_DIR if it is wrong or missing."""
+    """Update vencordDir to point to MANAGED_VENCORD_DIR if it is wrong or missing, ensuring package.json exists."""
+    if MANAGED_VENCORD_DIR.exists():
+        ensure_managed_vencord_package_json(MANAGED_VENCORD_DIR)
     write_vencord_dir(str(MANAGED_VENCORD_DIR))
 
 
@@ -339,8 +371,9 @@ def _write_settings(settings: Dict[str, Any]) -> None:
 
 
 def enable_vencord_plugins() -> None:
-    """Enable all VENCORD_PLUGIN_KEYS in Vencord settings.json."""
+    """Enable all VENCORD_PLUGIN_KEYS in Vencord settings.json and disable autoUpdate."""
     settings = _read_settings()
+    settings["autoUpdate"] = False
     plugins = settings.setdefault("plugins", {})
     for key in VENCORD_PLUGIN_KEYS:
         plugins.setdefault(key, {})["enabled"] = True
@@ -775,7 +808,13 @@ def _extract_veckord_plugin(zip_path: Path, dest: Path) -> None:
 
 def _decky_plugin_dir_needs_sudo() -> bool:
     """Return True if we need sudo to create or modify the Decky plugin dir."""
-    return not os.access(DECKY_PLUGINS_ROOT, os.W_OK)
+    if not os.access(DECKY_PLUGINS_ROOT, os.W_OK):
+        return True
+    if DECKY_PLUGIN_DIR.exists() and not os.access(DECKY_PLUGIN_DIR, os.W_OK):
+        return True
+    if LEGACY_DECKY_PLUGIN_DIR.exists() and not os.access(LEGACY_DECKY_PLUGIN_DIR, os.W_OK):
+        return True
+    return False
 
 
 def validate_staged_plugin(staging_dir: Path) -> None:
@@ -832,6 +871,10 @@ def install_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> Option
         raise InstallerError(
             f"{DECKY_PLUGIN_DIR} is a symlink. Remove it manually before installing."
         )
+    if is_symlink_target(LEGACY_DECKY_PLUGIN_DIR):
+        raise InstallerError(
+            f"{LEGACY_DECKY_PLUGIN_DIR} is a symlink. Remove it manually before installing."
+        )
 
     # 1. Extract and validate in user-owned temporary staging dir
     staging_dir = Path(tempfile.mkdtemp(prefix="veckord_staging_"))
@@ -853,6 +896,18 @@ def install_decky_plugin(veckord_zip: Path, rollback: RollbackContext) -> Option
                 DECKY_PLUGIN_DIR.rename(backup_path)
 
             _info(f"Created atomic backup at {backup_path}")
+
+        # Safely back up / clean up legacy Deckord directory if present
+        if LEGACY_DECKY_PLUGIN_DIR.exists():
+            legacy_backup_name = f".deckord-legacy-backup-{time.strftime('%Y%m%d_%H%M%S')}"
+            legacy_backup_path = DECKY_PLUGINS_ROOT / legacy_backup_name
+            if needs_sudo:
+                run_sudo("mv", str(LEGACY_DECKY_PLUGIN_DIR), str(legacy_backup_path))
+            else:
+                LEGACY_DECKY_PLUGIN_DIR.rename(legacy_backup_path)
+            _info(f"Backed up legacy directory {LEGACY_DECKY_PLUGIN_DIR} to {legacy_backup_path}")
+            if not backup_path:
+                backup_path = legacy_backup_path
 
         # 3. Create fresh plugin directory & copy staged files
         try:
@@ -911,6 +966,7 @@ def install_managed_vencord(vencord_dist_zip: Path, rollback: RollbackContext) -
     tmp_dir = Path(tempfile.mkdtemp(prefix="veckord_vencord_"))
     try:
         _extract_vencord_dist(vencord_dist_zip, tmp_dir)
+        ensure_managed_vencord_package_json(tmp_dir)
         verify_vencord_dist_metadata(tmp_dir)
 
         # Backup existing if present
@@ -922,6 +978,7 @@ def install_managed_vencord(vencord_dist_zip: Path, rollback: RollbackContext) -
 
         MANAGED_VENCORD_DIR.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(tmp_dir), str(MANAGED_VENCORD_DIR))
+        ensure_managed_vencord_package_json(MANAGED_VENCORD_DIR)
         rollback.register(lambda: _remove_managed_vencord(backup_path))
         _status("PASS", "Managed Vencord distribution installed", str(MANAGED_VENCORD_DIR))
     finally:
@@ -1104,18 +1161,25 @@ def cmd_check() -> int:
             _status("WARNING", f"Display name is '{display_name}', expected '{PLUGIN_DISPLAY_NAME}'")
         if is_symlink_target(DECKY_PLUGIN_DIR):
             _status("WARNING", "Plugin directory is a symlink — unexpected")
+    elif LEGACY_DECKY_PLUGIN_DIR.exists():
+        version, display_name = get_plugin_info()
+        _status(
+            "FAIL",
+            f"Legacy plugin directory found: {LEGACY_DECKY_PLUGIN_DIR} (requires migration to {DECKY_PLUGIN_DIR})",
+            f"v{version or 'unknown'}, name={display_name or 'unknown'}",
+        )
+        has_fail = True
     else:
         _status("FAIL", f"Plugin directory NOT found: {DECKY_PLUGIN_DIR}")
         has_fail = True
 
     if check_duplicate_plugin_dirs():
-        veckord_path = DECKY_PLUGINS_ROOT / "Veckord"
         _status(
             "FAIL",
             f"Duplicate plugin directories detected!",
             f"Both Deckord/ and Veckord/ exist — Decky will load both",
         )
-        _info(f"  Remove one: rm -rf {veckord_path}")
+        _info(f"  Remove legacy directory: rm -rf {LEGACY_DECKY_PLUGIN_DIR}")
         has_fail = True
     else:
         _status("PASS", "No duplicate plugin directories")
@@ -1123,7 +1187,7 @@ def cmd_check() -> int:
     # --- Managed Vencord ---
     _section("Managed Vencord Distribution")
     if get_managed_vencord_ok():
-        _status("PASS", "Managed Vencord dir present and has patcher.js", str(MANAGED_VENCORD_DIR))
+        _status("PASS", "Managed Vencord dir present and valid", str(MANAGED_VENCORD_DIR))
     else:
         _status("FAIL", "Managed Vencord dir missing or incomplete", str(MANAGED_VENCORD_DIR))
         has_fail = True
@@ -1251,10 +1315,11 @@ def cmd_install(tag: Optional[str] = None, interactive: bool = True) -> int:
     _assert_decky()
     check_sudo_preflight(interactive)
 
-    if DECKY_PLUGIN_DIR.exists():
-        _status("WARNING", f"Plugin directory already exists: {DECKY_PLUGIN_DIR}")
+    if DECKY_PLUGIN_DIR.exists() or LEGACY_DECKY_PLUGIN_DIR.exists():
+        existing_dir = DECKY_PLUGIN_DIR if DECKY_PLUGIN_DIR.exists() else LEGACY_DECKY_PLUGIN_DIR
+        _status("WARNING", f"Plugin directory already exists: {existing_dir}")
         if interactive:
-            answer = _ask("Continue? (This will update the existing installation.)")
+            answer = _ask("Continue? (This will update/migrate the existing installation.)")
             if answer != "y":
                 raise InstallerError("Installation cancelled by user.")
         # Treat as update from here
@@ -1349,7 +1414,7 @@ def cmd_update(tag: Optional[str] = None, interactive: bool = True) -> int:
     _assert_decky()
     check_sudo_preflight(interactive)
 
-    if not DECKY_PLUGIN_DIR.exists():
+    if not DECKY_PLUGIN_DIR.exists() and not LEGACY_DECKY_PLUGIN_DIR.exists():
         raise InstallerError(
             f"Plugin directory not found: {DECKY_PLUGIN_DIR}\n"
             f"Run 'install.py install' for a fresh installation."
@@ -1429,7 +1494,7 @@ def cmd_update(tag: Optional[str] = None, interactive: bool = True) -> int:
 def cmd_repair(interactive: bool = True) -> int:
     """
     Repair a broken Veckord installation without downloading if not necessary.
-    Fixes: wrong/missing vencordDir, disabled plugin keys, missing Flatpak overrides.
+    Fixes: wrong/missing vencordDir, disabled plugin keys, missing Flatpak overrides, legacy plugin dir migration.
     """
     print(f"\nVeckord Installer {INSTALLER_VERSION} — Repair")
     print("=" * _COL_W)
@@ -1443,19 +1508,42 @@ def cmd_repair(interactive: bool = True) -> int:
 
     _section("Checking installation state")
 
-    if not DECKY_PLUGIN_DIR.exists():
+    if not DECKY_PLUGIN_DIR.exists() and not LEGACY_DECKY_PLUGIN_DIR.exists():
         raise InstallerError(
             f"Plugin directory not found: {DECKY_PLUGIN_DIR}\n"
             f"Run 'install.py install' for a fresh installation."
         )
 
+    # Migrate/clean up legacy Deckord directory
+    needs_sudo = _decky_plugin_dir_needs_sudo()
+    if LEGACY_DECKY_PLUGIN_DIR.exists():
+        if not DECKY_PLUGIN_DIR.exists():
+            if needs_sudo:
+                run_sudo("mv", str(LEGACY_DECKY_PLUGIN_DIR), str(DECKY_PLUGIN_DIR))
+            else:
+                LEGACY_DECKY_PLUGIN_DIR.rename(DECKY_PLUGIN_DIR)
+            _status("PASS", f"Fixed: migrated legacy plugin directory {LEGACY_DECKY_PLUGIN_DIR} → {DECKY_PLUGIN_DIR}")
+            fixed_anything = True
+        else:
+            if needs_sudo:
+                run_sudo("rm", "-rf", str(LEGACY_DECKY_PLUGIN_DIR))
+            else:
+                shutil.rmtree(LEGACY_DECKY_PLUGIN_DIR, ignore_errors=True)
+            _status("PASS", f"Fixed: removed duplicate legacy plugin directory {LEGACY_DECKY_PLUGIN_DIR}")
+            fixed_anything = True
+
     # Fix vencordDir
+    if MANAGED_VENCORD_DIR.exists():
+        if ensure_managed_vencord_package_json(MANAGED_VENCORD_DIR):
+            _status("PASS", "Fixed: created missing package.json in managed Vencord dir")
+            fixed_anything = True
+
     current_dir = read_vencord_dir()
     if current_dir != str(MANAGED_VENCORD_DIR):
         if not get_managed_vencord_ok():
             _status(
                 "FAIL",
-                "Managed Vencord dir is missing — cannot set vencordDir",
+                "Managed Vencord dir is missing or incomplete — cannot set vencordDir",
                 str(MANAGED_VENCORD_DIR),
             )
             _info("Run 'install.py update' to re-download and reinstall the managed Vencord.")
@@ -1520,6 +1608,79 @@ def cmd_repair(interactive: bool = True) -> int:
 
 
 # ---------------------------------------------------------------------------
+# cmd_uninstall
+# ---------------------------------------------------------------------------
+
+def cmd_uninstall(interactive: bool = True) -> int:
+    """Uninstall the Veckord Decky plugin and managed Vencord distribution."""
+    print(f"\nVeckord Installer {INSTALLER_VERSION} — Uninstall")
+    print("=" * _COL_W)
+
+    _assert_not_root()
+    _assert_bazzite()
+    check_sudo_preflight(interactive)
+
+    _maybe_ask_stop_vesktop(interactive)
+
+    needs_sudo = _decky_plugin_dir_needs_sudo()
+
+    # 1. Remove Decky plugin directories (both canonical and legacy)
+    _section("Removing Decky plugin directories")
+    for p_dir in [DECKY_PLUGIN_DIR, LEGACY_DECKY_PLUGIN_DIR]:
+        if p_dir.exists():
+            try:
+                if needs_sudo:
+                    run_sudo("rm", "-rf", str(p_dir))
+                else:
+                    shutil.rmtree(p_dir, ignore_errors=True)
+                _status("PASS", "Removed plugin directory", str(p_dir))
+            except Exception as e:
+                _status("FAIL", f"Failed to remove plugin directory {p_dir}", str(e))
+        else:
+            _status("INFO", "Plugin directory not found", str(p_dir))
+
+    # 2. Remove managed Vencord distribution
+    _section("Removing managed Vencord distribution")
+    if MANAGED_VENCORD_DIR.exists():
+        try:
+            shutil.rmtree(MANAGED_VENCORD_DIR, ignore_errors=True)
+            _status("PASS", "Removed managed Vencord distribution", str(MANAGED_VENCORD_DIR))
+        except Exception as e:
+            _status("FAIL", "Failed to remove managed Vencord distribution", str(e))
+    else:
+        _status("INFO", "Managed Vencord distribution not found", str(MANAGED_VENCORD_DIR))
+
+    # 3. Clean state.json vencordDir if set to managed path
+    _section("Cleaning Vesktop state.json")
+    if read_vencord_dir() == str(MANAGED_VENCORD_DIR):
+        _remove_vencord_dir_from_state()
+        _status("PASS", "Removed vencordDir from state.json")
+    else:
+        _status("INFO", "vencordDir in state.json not set to managed dir")
+
+    # 4. Disable Vencord bridge plugin in settings.json
+    _section("Disabling Vencord bridge plugin")
+    try:
+        disable_vencord_plugins()
+        _status("PASS", "Disabled Vencord bridge plugin in settings.json")
+    except Exception as e:
+        _status("WARNING", f"Could not disable Vencord bridge plugins: {e}")
+
+    # 5. Restart Decky Loader service if active
+    if get_decky_service_active():
+        _section("Restarting Decky Loader")
+        try:
+            run_sudo("systemctl", "restart", DECKY_SERVICE)
+            _status("PASS", "Decky Loader service restarted")
+        except Exception as e:
+            _status("WARNING", f"Failed to restart Decky service: {e}")
+
+    print()
+    _info("Uninstall complete.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -1541,7 +1702,7 @@ def main() -> int:
     )
     parser.add_argument(
         "command",
-        choices=["check", "install", "update", "repair"],
+        choices=["check", "install", "update", "repair", "uninstall"],
         help="Operation to perform",
     )
     args = parser.parse_args()
@@ -1556,13 +1717,13 @@ def main() -> int:
             return cmd_update(tag=args.tag, interactive=interactive)
         elif args.command == "repair":
             return cmd_repair(interactive=interactive)
+        elif args.command == "uninstall":
+            return cmd_uninstall(interactive=interactive)
     except InstallerError as e:
         print(f"\n  [FAIL] {e}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         print("\n  Interrupted by user.", file=sys.stderr)
-        return 1
-
     return 0
 
 

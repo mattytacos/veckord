@@ -69,10 +69,13 @@ def _make_vencord_dist_zip(dest: Path) -> bytes:
     """Build a minimal valid vencord-dist.zip and return its SHA-256 digest."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("patcher.js", b"// vencord patcher\n")
-        zf.writestr("renderer.js", b"// vencord renderer\n")
+        zf.writestr("package.json", b"{}\n")
         zf.writestr("vencordDesktopMain.js", b"// vencord main\n")
-        zf.writestr("package.json", b"{}")
+        zf.writestr("renderer.js", b"// vencord renderer\n")
+        zf.writestr("preload.js", b"// vencord preload\n")
+        zf.writestr("renderer.css", b"/* vencord css */\n")
+        zf.writestr("build-metadata.json", b'{"veckord_version":"1.0.3"}\n')
+        zf.writestr("patcher.js", b"// vencord patcher\n")
     raw = buf.getvalue()
     dest.write_bytes(raw)
     return hashlib.sha256(raw).hexdigest()
@@ -178,6 +181,7 @@ class InstallerTestBase(unittest.TestCase):
             "RUNTIME_DIR": M.RUNTIME_DIR,
             "DECKY_PLUGINS_ROOT": M.DECKY_PLUGINS_ROOT,
             "DECKY_PLUGIN_DIR": M.DECKY_PLUGIN_DIR,
+            "LEGACY_DECKY_PLUGIN_DIR": M.LEGACY_DECKY_PLUGIN_DIR,
             "VESKTOP_CONFIG": M.VESKTOP_CONFIG,
             "MANAGED_ROOT": M.MANAGED_ROOT,
             "MANAGED_VENCORD_DIR": M.MANAGED_VENCORD_DIR,
@@ -194,7 +198,8 @@ class InstallerTestBase(unittest.TestCase):
         M.UID = os.getuid()
         M.RUNTIME_DIR = self.tmp / "run"
         M.DECKY_PLUGINS_ROOT = self.tmp / "homebrew" / "plugins"
-        M.DECKY_PLUGIN_DIR = M.DECKY_PLUGINS_ROOT / "Deckord"
+        M.DECKY_PLUGIN_DIR = M.DECKY_PLUGINS_ROOT / "Veckord"
+        M.LEGACY_DECKY_PLUGIN_DIR = M.DECKY_PLUGINS_ROOT / "Deckord"
         M.VESKTOP_CONFIG = self.tmp / "vesktop_config"
         M.MANAGED_ROOT = self.tmp / "managed"
         M.MANAGED_VENCORD_DIR = M.MANAGED_ROOT / "vencord"
@@ -239,8 +244,13 @@ class InstallerTestBase(unittest.TestCase):
 
     def _create_managed_vencord(self):
         M.MANAGED_VENCORD_DIR.mkdir(parents=True, exist_ok=True)
-        (M.MANAGED_VENCORD_DIR / "patcher.js").write_text("// patcher\n")
+        (M.MANAGED_VENCORD_DIR / "package.json").write_text("{}\n")
+        (M.MANAGED_VENCORD_DIR / "vencordDesktopMain.js").write_text("// main\n")
         (M.MANAGED_VENCORD_DIR / "renderer.js").write_text("// renderer\n")
+        (M.MANAGED_VENCORD_DIR / "preload.js").write_text("// preload\n")
+        (M.MANAGED_VENCORD_DIR / "renderer.css").write_text("/* css */\n")
+        (M.MANAGED_VENCORD_DIR / "build-metadata.json").write_text('{"veckord_version":"1.0.3"}\n')
+        (M.MANAGED_VENCORD_DIR / "patcher.js").write_text("// patcher\n")
 
     def _create_flatpak_override(self, filesystems: Optional[List[str]] = None):
         override_dir = self.tmp / "flatpak" / "overrides"
@@ -365,9 +375,9 @@ class TestFlatpakOverrides(InstallerTestBase):
         self._create_flatpak_override()
 
     def test_add_new_entry_to_empty_file(self):
-        M.ensure_flatpak_filesystem(str(M.MANAGED_VENCORD_DIR) + ":ro")
+        M.ensure_flatpak_filesystem(str(M.MANAGED_VENCORD_DIR) + ":create")
         content = M.FLATPAK_OVERRIDE_FILE.read_text()
-        self.assertIn(str(M.MANAGED_VENCORD_DIR) + ":ro", content)
+        self.assertIn(str(M.MANAGED_VENCORD_DIR) + ":create", content)
 
     def test_add_xdg_run_deckord(self):
         M.ensure_flatpak_filesystem("xdg-run/deckord:create")
@@ -758,18 +768,19 @@ class TestRepeatedInstallation(InstallerTestBase):
     @patch.object(M, "is_decky_installed", return_value=True)
     @patch.object(M, "is_vesktop_running", return_value=False)
     @patch.object(M, "run_sudo", return_value=None)
-    def test_install_twice_does_not_create_veckord_dir(
+    def test_install_twice_installs_to_veckord_dir(
         self, mock_sudo, mock_running, mock_decky, mock_vesktop, mock_bazzite
     ):
-        """Running install twice should never create a Veckord/ directory."""
+        """Running install twice should install cleanly to Veckord/ without leaving Deckord/ active."""
         dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
         with patch.object(M, "download_release_assets", return_value=dl_dir):
             # First install
             M.cmd_install(tag="v1.0.3", interactive=False)
             # Second install (will route to update since plugin_dir exists)
             M.cmd_install(tag="v1.0.3", interactive=False)
-        self.assertTrue(M.DECKY_PLUGIN_DIR.exists())  # Deckord/ exists
-        self.assertFalse((M.DECKY_PLUGINS_ROOT / "Veckord").exists())  # Veckord/ never created
+        self.assertTrue(M.DECKY_PLUGIN_DIR.exists())  # Veckord/ exists
+        self.assertEqual(M.DECKY_PLUGIN_DIR.name, "Veckord")
+        self.assertFalse((M.DECKY_PLUGINS_ROOT / "Deckord").exists())  # Deckord/ not present
 
 
 # ===========================================================================
@@ -1023,6 +1034,144 @@ class TestPrivilegeHandlingAndRollback(InstallerTestBase):
             self.assertNotIn("state.json", cmd_str)
             self.assertNotIn("settings.json", cmd_str)
             self.assertNotIn("flatpak", cmd_str)
+
+
+# ===========================================================================
+# Test: Legacy Deckord directory migration and uninstall
+# ===========================================================================
+
+class TestLegacyDeckordMigrationAndUninstall(InstallerTestBase):
+
+    def setUp(self):
+        super().setUp()
+        M.DECKY_PLUGINS_ROOT.mkdir(parents=True, exist_ok=True)
+        self._create_managed_vencord()
+        self._create_vesktop_config(vencord_dir=str(M.MANAGED_VENCORD_DIR))
+        self._create_flatpak_override()
+        self._setup_downloads()
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    @patch.object(M, "run_sudo", return_value=None)
+    def test_install_migrates_legacy_deckord_dir(
+        self, mock_sudo, mock_preflight, mock_running, mock_decky, mock_vesktop, mock_bazzite
+    ):
+        """Installing when only legacy Deckord/ exists should move/backup Deckord/ and create Veckord/."""
+        legacy_dir = M.DECKY_PLUGINS_ROOT / "Deckord"
+        legacy_dir.mkdir()
+        (legacy_dir / "old_file.txt").write_text("legacy")
+
+        dl_dir = M.MANAGED_ROOT / "downloads" / "v1.0.3"
+        with patch.object(M, "download_release_assets", return_value=dl_dir):
+            result = M.cmd_install(tag="v1.0.3", interactive=False)
+
+        self.assertEqual(result, 0)
+        self.assertTrue(M.DECKY_PLUGIN_DIR.exists())
+        self.assertEqual(M.DECKY_PLUGIN_DIR.name, "Veckord")
+        self.assertFalse(legacy_dir.exists())
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    def test_repair_migrates_legacy_deckord_dir(
+        self, mock_running, mock_decky, mock_vesktop, mock_bazzite
+    ):
+        """cmd_repair should rename legacy Deckord/ to Veckord/ if only Deckord/ exists."""
+        legacy_dir = M.DECKY_PLUGINS_ROOT / "Deckord"
+        legacy_dir.mkdir()
+        (legacy_dir / "plugin.json").write_text('{"name": "Veckord"}')
+
+        result = M.cmd_repair(interactive=False)
+
+        self.assertEqual(result, 0)
+        self.assertTrue(M.DECKY_PLUGIN_DIR.exists())
+        self.assertFalse(legacy_dir.exists())
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    def test_repair_removes_duplicate_legacy_deckord_dir(
+        self, mock_running, mock_decky, mock_vesktop, mock_bazzite
+    ):
+        """cmd_repair should remove legacy Deckord/ if both Veckord/ and Deckord/ exist."""
+        M.DECKY_PLUGIN_DIR.mkdir()
+        legacy_dir = M.DECKY_PLUGINS_ROOT / "Deckord"
+        legacy_dir.mkdir()
+
+        result = M.cmd_repair(interactive=False)
+
+        self.assertEqual(result, 0)
+        self.assertTrue(M.DECKY_PLUGIN_DIR.exists())
+        self.assertFalse(legacy_dir.exists())
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    def test_uninstall_removes_canonical_and_legacy_dirs(
+        self, mock_running, mock_preflight, mock_bazzite
+    ):
+        """cmd_uninstall should remove both Veckord/ and legacy Deckord/ plugin directories."""
+        M.DECKY_PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+        legacy_dir = M.DECKY_PLUGINS_ROOT / "Deckord"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+
+        result = M.cmd_uninstall(interactive=False)
+
+        self.assertEqual(result, 0)
+        self.assertFalse(M.DECKY_PLUGIN_DIR.exists())
+        self.assertFalse(legacy_dir.exists())
+        self.assertFalse(M.MANAGED_VENCORD_DIR.exists())
+
+    def test_ensure_managed_vencord_package_json_creates_file(self):
+        """ensure_managed_vencord_package_json creates package.json containing {} atomically if missing."""
+        v_dir = self.tmp / "test_vencord"
+        v_dir.mkdir()
+        pkg_path = v_dir / "package.json"
+        self.assertFalse(pkg_path.exists())
+
+        created = M.ensure_managed_vencord_package_json(v_dir)
+        self.assertTrue(created)
+        self.assertTrue(pkg_path.exists())
+        self.assertEqual(pkg_path.read_text().strip(), "{}")
+
+        # Second call returns False because file exists
+        created_again = M.ensure_managed_vencord_package_json(v_dir)
+        self.assertFalse(created_again)
+
+    def test_get_managed_vencord_ok_validates_required_files(self):
+        """get_managed_vencord_ok returns True only when all required distribution files are present."""
+        self._create_managed_vencord()
+        self.assertTrue(M.get_managed_vencord_ok())
+
+        # Removing package.json should cause validation to fail
+        (M.MANAGED_VENCORD_DIR / "package.json").unlink()
+        self.assertFalse(M.get_managed_vencord_ok())
+
+    @patch.object(M, "is_bazzite", return_value=True)
+    @patch.object(M, "is_vesktop_installed", return_value=True)
+    @patch.object(M, "is_decky_installed", return_value=True)
+    @patch.object(M, "check_sudo_preflight", return_value=None)
+    @patch.object(M, "is_vesktop_running", return_value=False)
+    def test_repair_creates_missing_package_json(self, mock_running, mock_preflight, mock_decky, mock_vesktop, mock_bazzite):
+        """cmd_repair atomically creates missing package.json if MANAGED_VENCORD_DIR exists."""
+        self._create_managed_vencord()
+        (M.MANAGED_VENCORD_DIR / "package.json").unlink()
+        self.assertFalse((M.MANAGED_VENCORD_DIR / "package.json").exists())
+
+        M.DECKY_PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
+        M.write_vencord_dir(str(M.MANAGED_VENCORD_DIR))
+        self._create_flatpak_override([str(M.MANAGED_VENCORD_DIR) + ":ro", "xdg-run/veckord:create", "xdg-run/deckord:create"])
+
+        res = M.cmd_repair(interactive=False)
+        self.assertEqual(res, 0)
+        self.assertTrue((M.MANAGED_VENCORD_DIR / "package.json").exists())
+        self.assertEqual((M.MANAGED_VENCORD_DIR / "package.json").read_text().strip(), "{}")
+
 
 
 # ===========================================================================
