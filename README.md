@@ -12,11 +12,11 @@
 
 ## Features
 
-- 🎮 **Controller Based UI**
+- **Controller Based UI**
 - **Audio Controls**:
   - Active voice channel card showing connected server, channel, and live voice status.
   - One-tap controller actions: **Mute / Unmute**, **Deafen / Undeafen**, and **Disconnect**.
-- ⭐️ **Favorites System**: Save your most used voice channels, reorder them, and join instantly from the QAM.
+- **Favorites System**: Save your most used voice channels, reorder them, and join instantly from the QAM.
 - **Zero Audio Overhead**: Veckord controls voice state via client RPC—it does **not** transport audio or run a separate voice stack.
 - **Privacy First**: Runs entirely over local Unix domain sockets (`AF_UNIX`). No external servers, no token tracking, no cloud telemetry.
 
@@ -100,7 +100,7 @@ python3 -m unittest discover tests
 
 ---
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 | Issue | Cause | Solution |
 | :--- | :--- | :--- |
