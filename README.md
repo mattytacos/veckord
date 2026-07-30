@@ -1,4 +1,4 @@
-# Veckord 🎮🎧
+# Veckord
 
 > Controller-native Decky Loader plugin for controlling Discord voice channels in Gaming Mode via a local Vesktop/Vencord bridge.
 
@@ -6,24 +6,23 @@
 [![Decky Loader](https://img.shields.io/badge/Decky--Loader-Plugin-blue.svg)](https://github.com/SteamDeckHomebrew/decky-loader)
 [![Vesktop](https://img.shields.io/badge/Client-Vesktop%2FVencord-7289da.svg)](https://github.com/Vencord/Vesktop)
 
-**Veckord** allows Steam Deck and Handheld PC gamers running Steam Gaming Mode (Bazzite, SteamOS) to seamlessly view, join, mute, deafen, and manage Discord voice channels directly from the Decky QAM (Quick Access Menu) overlay—without switching out of game or using a mouse/touchpad.
+**Veckord** allows Steam Deck and Handheld PC gamers running Steam Gaming Mode (Bazzite, SteamOS) to seamlessly view, join, mute, deafen, and manage Discord voice channels directly from the Decky QAM (Quick Access Menu) overlay all on controller.
 
 ---
 
-## 🌟 Features
+## Features
 
-- 🎮 **Controller-Native UI**: 100% operable with D-pad, thumbsticks, and face buttons in Steam Gaming Mode.
-- 📡 **Live Channel Controls**:
-  - Compact active voice channel card showing connected server, channel, and live voice status.
+- 🎮 **Controller Based UI**
+- **Audio Controls**:
+  - Active voice channel card showing connected server, channel, and live voice status.
   - One-tap controller actions: **Mute / Unmute**, **Deafen / Undeafen**, and **Disconnect**.
-- ⭐️ **Favorites System**: Save your most used voice channels, reorder them, and join instantly from the Decky overlay.
-- 📋 **Guild & Channel Browser**: Grouped channel browser displaying all joinable voice channels across your Discord servers.
-- ⚡️ **Zero Audio Overhead**: Veckord controls voice state via client RPC—it does **not** transport audio or run a separate voice stack.
-- 🔒 **Privacy First**: Runs entirely over local Unix domain sockets (`AF_UNIX`). No external servers, no token tracking, no cloud telemetry.
+- ⭐️ **Favorites System**: Save your most used voice channels, reorder them, and join instantly from the QAM.
+- **Zero Audio Overhead**: Veckord controls voice state via client RPC—it does **not** transport audio or run a separate voice stack.
+- **Privacy First**: Runs entirely over local Unix domain sockets (`AF_UNIX`). No external servers, no token tracking, no cloud telemetry.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -42,7 +41,7 @@ graph TD
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 1. **Hardware / OS**: Steam Deck or Linux Gaming Handheld running Steam Gaming Mode (SteamOS, Bazzite, ChimeraOS).
 2. **Decky Loader**: Installed and working ([decky.xyz](https://decky.xyz)).
@@ -50,7 +49,7 @@ graph TD
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Step 1: Install Vencord Bridge Plugin
 1. Copy the `vencordBridge` directory into your Vencord userplugins directory:
@@ -65,7 +64,7 @@ graph TD
 
 ---
 
-## 🛠️ Building from Source
+## Building from Source
 
 ### Prerequisites
 - Node.js 20+ & `pnpm`
@@ -111,7 +110,7 @@ python3 -m unittest discover tests
 
 ---
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 - **Local IPC Only**: All communications remain on local Unix domain stream sockets (`/run/user/<uid>/veckord/bridge.sock`).
 - **No Token Storage**: Veckord does not read, request, or store your Discord account token or password.
@@ -119,7 +118,7 @@ python3 -m unittest discover tests
 
 ---
 
-## 📜 Disclaimer & License
+## Disclaimer & License
 
 > **Important**: Veckord is an independent open-source project created by **mattytacos** and is **not** affiliated with, endorsed by, or sponsored by Discord Inc., Vencord, Vesktop, Valve Corporation, or Decky Loader.
 
